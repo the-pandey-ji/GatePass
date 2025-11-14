@@ -13,7 +13,6 @@
 <title>Contract Labour / Trainee Gate Pass</title>
 
 
-
 <!-- Camera Script -->
 <script>
 let currentStream;
