@@ -1,5 +1,25 @@
-<%@ page language="java" import="java.sql.*" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*" %>
 <%@ page import="gatepass.Database" %>
+
+<%
+    // ==========================================================
+    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
+    // ==========================================================
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
+    response.setDateHeader("Expires", 0);        // Proxies.
+
+    // ==========================================================
+    // 🔑 SESSION AUTHENTICATION CHECK
+    // ==========================================================
+    // Check if the "username" session attribute exists (set during successful login)
+    if (session.getAttribute("username") == null) {
+        // If not authenticated, redirect to the main login page
+        response.sendRedirect("login.jsp");
+        return; // Stop processing the rest of the page
+    }
+%>
 
 <%!
 // Define the column names for the table headers
@@ -127,7 +147,8 @@ function loadPrintPageInMainFrame(srNo) {
         window.parent.right.location.href = url;
     } else {
         // Fallback if not inside the frame structure
-        alert("Could not load the print page in the main content frame. Loading in current window.");
+        // Since we cannot use alert(), we'll log the error and redirect directly
+        console.error("Could not load the print page in the main content frame. Redirecting.");
         window.location.href = url;
     }
 }
@@ -135,7 +156,9 @@ function loadPrintPageInMainFrame(srNo) {
 function executeCommands(){
   try {
     var WshShell = new ActiveXObject("Wscript.Shell");
-    WshShell.run("C://Users/cam.exe");
+    // This command is likely blocked by modern browsers/environments and only works in IE/specific client setups.
+    // It's left as is but won't execute in a standard sandbox.
+    WshShell.run("C://Users/cam.exe"); 
   } catch(e) {
     console.log("Webcam execution skipped: " + e.message);
   }

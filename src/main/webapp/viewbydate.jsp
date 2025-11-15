@@ -3,6 +3,25 @@
 <%@ page import="gatepass.Database" %>
 <%@ page import="java.io.*" %> 
 <%@ page import="java.text.*" %> 
+
+<%
+    // ==========================================================
+    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
+    // ==========================================================
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
+    response.setDateHeader("Expires", 0);        // Proxies.
+
+    // ==========================================================
+    // 🔑 SESSION AUTHENTICATION CHECK
+    // ==========================================================
+    // Check if the "username" session attribute exists (set during successful login)
+    if (session.getAttribute("username") == null) {
+        // If not authenticated, redirect to the main login page
+        response.sendRedirect("login.jsp");
+        return; // Stop processing the rest of the page
+    }
+%>
 <%!
 // Define the date format mask for Oracle, matching the YYYY-MM-DD input
 private static final String DATE_FORMAT_MASK = "YYYY-MM-DD"; 

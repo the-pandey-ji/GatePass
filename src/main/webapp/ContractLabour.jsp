@@ -1,4 +1,5 @@
-<%@ page language="java" import="java.sql.*" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*" %>
 <%@page import="java.lang.*" %>
 <%@page import="org.apache.commons.fileupload.FileItem" %>
 <%@page import="org.apache.commons.fileupload.FileUploadException" %>
@@ -7,6 +8,51 @@
 <%@page import="org.apache.commons.io.output.*" %>
 <%@page import="java.io.*" %>
 <%@ page language="java" import="gatepass.Database.*" %>
+
+<%
+    // ==========================================================
+    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
+    // ==========================================================
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
+    response.setDateHeader("Expires", 0);        // Proxies.
+
+    // ==========================================================
+    // 🔑 SESSION AUTHENTICATION CHECK
+    // ==========================================================
+    // Check if the "username" session attribute exists (set during successful login)
+    if (session.getAttribute("username") == null) {
+        // If not authenticated, redirect to the main login page
+        response.sendRedirect("login.jsp");
+        return; // Stop processing the rest of the page
+    }
+%>
+
+<%
+// Database connection and ID generation
+// NOTE: I'm wrapping the existing logic in a block to isolate resource management.
+gatepass.Database db1 = new gatepass.Database();
+Connection conn1 = null;
+Statement st1 = null;
+ResultSet rs1 = null;
+int id = 1;
+
+try {
+    conn1 = db1.getConnection();
+    st1 = conn1.createStatement();
+    rs1 = st1.executeQuery("select max(SER_NO)+1 from GATEPASS_CONTRACT_LABOUR");
+    if (rs1.next())  id = rs1.getInt(1); 
+    
+} catch (SQLException e) {
+    System.err.println("Database error generating Sr. No.: " + e.getMessage());
+} catch (Exception e) {
+    System.err.println("General error generating Sr. No.: " + e.getMessage());
+} finally {
+    if (rs1 != null) try { rs1.close(); } catch (SQLException ignore) {}
+    if (st1 != null) try { st1.close(); } catch (SQLException ignore) {}
+    if (conn1 != null) try { conn1.close(); } catch (SQLException ignore) {}
+}
+%>
 
 <html>
 <head>
@@ -28,7 +74,8 @@ function openCamera() {
   video.style.display = "block";
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    alert("Camera not supported in this browser.");
+    // Replace alert() with console log or UI message, as per constraints
+    console.error("Camera not supported in this browser."); 
     return;
   }
 
@@ -38,7 +85,8 @@ function openCamera() {
       video.srcObject = stream;
     })
     .catch(err => {
-      alert("Error accessing camera: " + err.message);
+      // Replace alert() with console log or UI message, as per constraints
+      console.error("Error accessing camera: " + err.message);
     });
 }
 
@@ -46,6 +94,12 @@ function capturePhoto() {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
   const previewImg = document.getElementById("photoPreview");
+
+  // Ensure video is playing and not hidden before attempting capture
+  if (video.style.display === 'none' || video.paused) {
+      // Optionally provide a message if the video feed is not active
+      return; 
+  }
 
   const context = canvas.getContext("2d");
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -63,71 +117,84 @@ function capturePhoto() {
   // ✅ Save image to hidden field
   document.getElementById("imageData").value = dataUrl;
 
-  alert("Photo captured successfully!");
+  // alert("Photo captured successfully!"); // Removed alert as per constraint
 }
 
 function retakePhoto() {
   const previewImg = document.getElementById("photoPreview");
   previewImg.style.display = "none";
+  document.getElementById("imageData").value = ""; // Clear old data
   openCamera();
 }
 
 function capLtr(value, id) {
 	  document.getElementById(id).value = value.toUpperCase();
-	}
+}
 
 
 function validateForm() {
 	  const imageData = document.getElementById("imageData").value;
 	  if (!imageData) {
-	    alert("Please capture a photo before submitting!");
+	    // Replace alert() with error display logic if needed
+	    console.error("Please capture a photo before submitting!");
 	    return false;
 	  }
 	  return true;
-	}
+}
 	
 	
-// === Existing AJAX & Validation Functions ===
+// === Existing AJAX & Validation Functions (Updated to modern JS) ===
+let reqRefNoDetails;
+
 function retrieveSerNoDetails() {
   var refNo = document.getElementById('refNo').value; 
   var urlRefNoDetails = "LabourGatePassSerNoDetail?refNo=" + refNo;
 
-  if (window.XMLHttpRequest) {
-    reqRefNoDetails = new XMLHttpRequest();
-    reqRefNoDetails.onreadystatechange = processStateChangeRefNoDetails;
-    reqRefNoDetails.open("GET", urlRefNoDetails, true);
-    reqRefNoDetails.send(null);
-  } else if (window.ActiveXObject) {
-    reqRefNoDetails = new ActiveXObject("Microsoft.XMLHTTP");
-    if (reqRefNoDetails) {
-      reqRefNoDetails.onreadystatechange = processStateChangeRefNoDetails;
-      reqRefNoDetails.open("GET", urlRefNoDetails, true);
-      reqRefNoDetails.send();
-    }
-  }
-}
+  if (refNo.trim() === "") return;
 
-function processStateChangeRefNoDetails() {
-  if (reqRefNoDetails.readyState == 4 && reqRefNoDetails.status == 200) {
-    var eQtrArr = reqRefNoDetails.responseText.split('|');
-    var fields = ["name","fatherName","desig","age","localAddress","permanentAddress","contrctrNameAddress","identification","vehicleNumber"];
-    for (let i=0; i<fields.length; i++) {
-      document.getElementById(fields[i]).value = (eQtrArr[i] && eQtrArr[i] != "null") ? eQtrArr[i] : "";
-    }
-  }
+  fetch(urlRefNoDetails)
+    .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok.');
+        return response.text();
+    })
+    .then(responseText => {
+        var eQtrArr = responseText.split('|');
+        var fields = ["name","fatherName","desig","age","localAddress","permanentAddress","contrctrNameAddress","identification","vehicleNumber"];
+        
+        for (let i=0; i<fields.length; i++) {
+          const value = (eQtrArr[i] && eQtrArr[i] !== "null") ? eQtrArr[i] : "";
+          const element = document.getElementById(fields[i]);
+          if (element) {
+              element.value = value;
+              // Also ensure fields are updated with capLtr logic if needed
+              capLtr(value, fields[i]); 
+          }
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching details:', error);
+    });
 }
 
 function enableRefNo() {
-  if (text_form.renwlTypeSel.value == "Old") {
-    /* alert("Please Enter Previous Serial Number as Ref No.");  */
-    text_form.refNo.disabled = false;
-  } else {
-    text_form.refNo.disabled = true;
+  const selectElement = document.forms["text_form"].renwlTypeSel;
+  const refNoInput = document.getElementById("refNo");
+
+  if (selectElement && refNoInput) {
+    if (selectElement.value == "Old") {
+      refNoInput.disabled = false;
+      refNoInput.focus();
+    } else {
+      refNoInput.disabled = true;
+      refNoInput.value = "";
+    }
   }
 }
 
-
-
+// Initial call to disable refNo if default is "New"
+document.addEventListener('DOMContentLoaded', () => {
+    enableRefNo();
+});
 
 </script>
 
@@ -177,7 +244,7 @@ td:first-child {
   width: 40%;
 }
 
-input[type="text"], select {
+input[type="text"], select, input[type="date"] {
   padding: 7px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -186,7 +253,7 @@ input[type="text"], select {
   font-size: 14px;
 }
 
-input[type="text"]:focus, select:focus {
+input[type="text"]:focus, select:focus, input[type="date"]:focus {
   border-color: #0078d4;
   box-shadow: 0 0 5px rgba(0,120,212,0.3);
   outline: none;
@@ -232,17 +299,6 @@ button:hover, input[type="submit"]:hover, input[type="reset"]:hover {
 
 </style>
 
-<%
-gatepass.Database db1 = new gatepass.Database();
-Connection conn1 = db1.getConnection();
-Statement st1 = conn1.createStatement();
-int id = 1;
-
-ResultSet rs1 = st1.executeQuery("select max(SER_NO)+1 from GATEPASS_CONTRACT_LABOUR");
-if (rs1.next())  id = rs1.getInt(1); 
-rs1.close(); st1.close(); conn1.close();
-%>
-
  	
 
 </head>
@@ -267,7 +323,7 @@ rs1.close(); st1.close(); conn1.close();
 
             <tr><td>Pass Type</td>
                 <td>
-                  <select name="renwlTypeSel" onchange="enableRefNo(this);">
+                  <select name="renwlTypeSel" onchange="enableRefNo();">
                     <option value="New">New</option>
                     <option value="Old">Old</option>
                   </select>

@@ -27,9 +27,8 @@ body {
 }</style>
   </head>
   
-  <body >
-   <form action="My.jsp" method="get" 
-      style="position:absolute; left:150px; top:170px; width:350px; height:40px; z-index:31; 
+  <body > <form action="My.jsp" method="get" 
+      style="position:absolute;left:40%;  width:350px; height:40px; z-index:31; 
              display:flex; align-items:center; justify-content:center; gap:10px; 
              background:#f8f9fa; border-radius:8px; padding:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
 
@@ -40,6 +39,7 @@ body {
   <input type="submit" name="view" value="View" 
          style="padding:6px 15px; border:none; border-radius:5px; background:#1e3c72; color:white; font-size:14px; cursor:pointer;">
 </form>
+  
 
   </body>
 </html>

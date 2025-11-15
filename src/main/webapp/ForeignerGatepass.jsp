@@ -1,4 +1,5 @@
-<%@ page language="java" import="java.sql.*"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*"%>
 <%@ page import="java.io.*"%>
 <%@page import="org.apache.commons.fileupload.FileItem"%>
 <%@page import="org.apache.commons.fileupload.FileUploadException"%>
@@ -6,6 +7,49 @@
 <%@page import="org.apache.commons.fileupload.servlet.ServletFileUpload"%>
 <%@page import="org.apache.commons.io.output.*"%>
 <%@ page language="java" import="gatepass.Database.*"%>
+
+<%
+    // ==========================================================
+    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
+    // ==========================================================
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
+    response.setDateHeader("Expires", 0);        // Proxies.
+
+    // ==========================================================
+    // 🔑 SESSION AUTHENTICATION CHECK
+    // ==========================================================
+    // Check if the "username" session attribute exists (set during successful login)
+    if (session.getAttribute("username") == null) {
+        // If not authenticated, redirect to the main login page
+        response.sendRedirect("login.jsp");
+        return; // Stop processing the rest of the page
+    }
+%>
+
+<%
+gatepass.Database db1 = new gatepass.Database();
+Connection conn = null;
+Statement st = null;
+ResultSet rs = null;
+int id = 1;
+
+try {
+    conn = db1.getConnection();
+    st = conn.createStatement();
+    rs = st.executeQuery("select max(SER_NO)+1 from GATEPASS_FOREIGNER");
+    if (rs.next())
+	    id = rs.getInt(1);
+} catch (SQLException e) {
+    System.err.println("Database error generating Sr. No.: " + e.getMessage());
+} catch (Exception e) {
+    System.err.println("General error generating Sr. No.: " + e.getMessage());
+} finally {
+    if (rs != null) try { rs.close(); } catch (SQLException ignore) {}
+    if (st != null) try { st.close(); } catch (SQLException ignore) {}
+    if (conn != null) try { conn.close(); } catch (SQLException ignore) {}
+}
+%>
 <html>
 <head>
 <title>Foreigner Gate Pass</title>
@@ -21,19 +65,25 @@
 	  previewImg.style.display = "none"; 
 	  video.style.display = "block"; 
 	  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-		  alert("Camera not supported in this browser.");
+		  console.error("Camera not supported in this browser.");
 		  return;
 		  } 
 	  navigator.mediaDevices.getUserMedia({ video: true }) .then(stream => { 
 		  currentStream = stream;
 		  video.srcObject = stream;
-		  }) .catch(err => { alert("Error accessing camera: " + err.message);
+		  }) .catch(err => { console.error("Error accessing camera: " + err.message);
 		  });
 	  } 
   function capturePhoto() {
 	  const video = document.getElementById("video");
 	  const canvas = document.getElementById("canvas");
 	  const previewImg = document.getElementById("photoPreview");
+
+      if (video.style.display === 'none' || video.paused) {
+          console.error("Video feed not active.");
+          return; 
+      }
+      
 	  const context = canvas.getContext("2d");
 	  context.drawImage(video, 0, 0, canvas.width, canvas.height);
 	  if (currentStream) { currentStream.getTracks().forEach(track => track.stop());
@@ -45,19 +95,26 @@
 	  canvas.style.display = "none";
 	  // ✅ Save image to hidden field 
 	  document.getElementById("imageData").value = dataUrl;
-	  alert("Photo captured successfully!");
+	  // alert("Photo captured successfully!"); // Removed alert
 	  } 
   function retakePhoto() { 
 	  const previewImg = document.getElementById("photoPreview");
-	  previewImg.style.display = "none"; openCamera();
+	  previewImg.style.display = "none"; 
+      document.getElementById("imageData").value = ""; // Clear old data
+      openCamera();
 	  } 
   function capLtr(value, id) {
-	  document.getElementById(id).value = value.toUpperCase();
+	  const input = document.getElementById(id);
+      if (input) {
+	      input.value = value.toUpperCase();
+      }
 	  } 
   function validateForm() {
 	  const imageData = document.getElementById("imageData").value;
-	  if (!imageData) { alert("Please capture a photo before submitting!");
-	  return false; 
+	  if (!imageData) { 
+          // alert("Please capture a photo before submitting!"); // Removed alert
+          console.error("Please capture a photo before submitting!");
+	      return false; 
 	  }
 	  return true; 
 	  } 
@@ -103,7 +160,7 @@ table {
 	width: 100%;
 }
 
-input[type="text"] {
+input[type="text"], input[type="date"] {
 	padding: 6px;
 	border: 1px solid #ccc;
 	border-radius: 5px;
@@ -111,7 +168,7 @@ input[type="text"] {
 	transition: 0.2s;
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus, input[type="date"]:focus {
 	border-color: #0078d4;
 	box-shadow: 0 0 4px rgba(0, 120, 212, 0.3);
 	outline: none;
@@ -164,18 +221,6 @@ td:first-child {
 	color: #333;
 }
 </style>
-<%
-gatepass.Database db1 = new gatepass.Database();
-Connection conn = db1.getConnection();
-Statement st = conn.createStatement();
-ResultSet rs = st.executeQuery("select max(SER_NO)+1 from GATEPASS_FOREIGNER");
-int id = 1;
-if (rs.next())
-	id = rs.getInt(1);
-rs.close();
-st.close();
-conn.close();
-%>
 </head>
 <body onload="openCamera()"
 	onkeydown="if(event.keyCode==13){event.keyCode=9; return event.keyCode}">
@@ -273,10 +318,5 @@ conn.close();
 			</tr>
 		</table>
 	</div>
-<%-- 	<footer>
-		©
-		<%=java.time.Year.now()%>
-		Gate Pass Management System | NFL Panipat
-	</footer> --%>
 </body>
 </html>

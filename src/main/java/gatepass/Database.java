@@ -6,21 +6,35 @@ public class Database {
 	//String ipFinal="10.3.122.106";	
 String ipFinal="10.3.126.43";
 String ipFinalName="gatepass";
+/*
+ * public Connection getConnection() { Connection conn = null; try {
+ * Class.forName("oracle.jdbc.driver.OracleDriver");
+ * 
+ * String url = "jdbc:oracle:thin:@10.3.111.120:1521:ORCL"; conn =
+ * DriverManager.getConnection(url, "PERSONNEL", "PERSONNEL");
+ * 
+ * System.out.println("DB CONNECTED-->PERSONNEL");
+ * 
+ * } catch (Exception e) { e.printStackTrace(); } return (conn); }
+ */
+
 public Connection getConnection() {
-		Connection conn = null;
-		try {
-			Class.forName("oracle.jdbc.driver.OracleDriver");
+    Connection conn = null;
+    try {
+        Class.forName("oracle.jdbc.driver.OracleDriver");
 
-			String url = "jdbc:oracle:thin:@10.3.111.120:1521:ORCL";
-			conn = DriverManager.getConnection(url, "PERSONNEL", "PERSONNEL");			
-			
-			System.out.println("DB CONNECTED-->PERSONNEL");
+        String url = "jdbc:oracle:thin:@//10.3.111.120:1521/ORCL";  // Use service name format
+        conn = DriverManager.getConnection(url, "PERSONNEL", "PERSONNEL");
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return (conn);
-	}
+		/* System.out.println("DB CONNECTED --> PERSONNEL"); */
+    } catch (Exception e) {
+        System.out.println("❌ ORACLE CONNECTION FAILED");
+        e.printStackTrace();
+        throw new RuntimeException("Database connection failed", e); // <-- STOP returning null
+    }
+    return conn;
+}
+
 	
 
 public String getServerIp() {

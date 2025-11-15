@@ -1,29 +1,93 @@
-<%@ page language="java" import="java.io.*, java.sql.*, java.util.*, gatepass.Database" pageEncoding="UTF-8" %>
-<%
-    String username = request.getParameter("username");
-    String password = request.getParameter("password");
-    String formSubmitted = request.getParameter("formSubmitted");
-    boolean loginSuccess = false;
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page language="java" import="java.util.*, gatepass.Database" %>
+<%@ page import="java.sql.*,java.time.*,java.time.format.DateTimeFormatter,java.io.*,java.util.Base64,gatepass.CommonService"%>
 
-    if ("true".equals(formSubmitted)) {
-        if ("gatepass".equals(username) && "gatepass".equals(password)) {
-            loginSuccess = true;
-            session.setAttribute("username", username);
-        } else {
-            request.setAttribute("error", "*Incorrect Username or Password");
+<%
+    // ==========================================================
+    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THE DASHBOARD PAGE
+    // Forces re-authentication when the user clicks the back button.
+    // ==========================================================
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
+    response.setDateHeader("Expires", 0);        // Proxies.
+    
+    // --- 1. INITIALIZE VARIABLES & SESSION CHECK ---
+    String sessionUsername = (String) session.getAttribute("username");
+    boolean sessionValid = (sessionUsername != null);
+    boolean loginSuccess = sessionValid; // Assume success if session is already valid
+    String errorMessage = null;
+    
+    // --- 2. LOGIN ATTEMPT PROCESSING ---
+    // Only attempt login if session is NOT valid and form data is present
+    if (!sessionValid) {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        String formSubmitted = request.getParameter("formSubmitted");
+        
+        if ("true".equals(formSubmitted) && username != null && password != null) {
+
+             Connection conn1 = null;
+             PreparedStatement ps1 = null; 
+             ResultSet rs1 = null;
+             
+             try {
+               // Assuming 'gatepass.Database' and its getConnection method are correct
+               Database db = new Database();	
+               conn1 = db.getConnection();
+               
+               // Use PreparedStatement for security (prevent SQL Injection)
+               String sql = "SELECT PASSWD FROM GATEPASS_PASSWORD_MANAGER WHERE USERNAME = ?";
+               ps1 = conn1.prepareStatement(sql);
+               ps1.setString(1, username);
+               
+               rs1 = ps1.executeQuery();
+
+               if (rs1.next()) {
+                   String storedPassword = rs1.getString("PASSWD");
+                   
+                   if (storedPassword.equals(password)) {
+                       // Authentication SUCCESS
+                       loginSuccess = true;
+                       session.setAttribute("username", username); 
+                       session.setMaxInactiveInterval(30 * 60);
+                       
+                       // 🔄 PRG IMPLEMENTATION: Redirect to a safe GET request
+                       // This replaces the dangerous POST request in the browser history.
+                       response.sendRedirect("login.jsp");
+                       return; // Crucial: Stop processing the current POST request
+                   } 
+               }
+               
+               if (!loginSuccess) {
+                   // Authentication FAILED
+                   errorMessage = "*Incorrect Username or Password"; 
+               }
+               
+            } catch (SQLException e) { 
+                errorMessage = "Database Error during login: " + e.getMessage();
+                e.printStackTrace();
+            } catch (Exception e) { 
+                errorMessage = "System Error during login: " + e.getMessage();
+                e.printStackTrace();
+            } finally {
+                // Close resources safely
+                if (rs1 != null) try { rs1.close(); } catch (Exception e) {} 
+                if (ps1 != null) try { ps1.close(); } catch (Exception e) {} 
+                if (conn1 != null) try { conn1.close(); } catch (Exception e) {}
+            }
         }
     }
 %>
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Gate Pass Management System</title>
+<title>Gate Pass <%= loginSuccess ? "Dashboard" : "Login" %></title>
 <link rel="stylesheet" href="index2.css">
 <script src="login.js"></script>
 
-
 <style>
+/* === GLOBAL RESET === */
 * {
     margin: 0;
     padding: 0;
@@ -31,21 +95,41 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* === GLOBAL === */
-body {
-    background-color: #f4f7f6;
-    color: #333;
-    min-height: 100vh;
-    overflow-x: hidden;
+/* === BODY === */
+html, body {
+    height: 100%;
+    /* Dashboard allows scrolling, Login prevents it */
+    overflow-x: hidden; 
+    overflow-y: <%= loginSuccess ? "auto" : "hidden" %>;
 }
 
-/* === HEADER (Cleaned up: only Logos and Title) === */
+body {
+    background-color: <%= loginSuccess ? "#f4f7f6" : "#fff" %>;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: <%= loginSuccess ? "flex-start" : "center" %>;
+    min-height: 100vh;
+}
+
+.error-label {
+    color: #c0392b; 
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 15px; 
+    padding: 8px;
+    border: 1px solid #e74c3c;
+    background-color: #fceae9; 
+    border-radius: 5px;
+}
+
+/* === HEADER (Combined styles) === */
 .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px; 
-    background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%); 
+    background: <%= loginSuccess ? "linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)" : "#303f9f" %>; 
     color: white;
     position: fixed;
     width: 100%;
@@ -55,39 +139,151 @@ body {
     height: 110px;
 }
 
-/* Logo Styling */
 .logo {
-    height: 85px;
+    height: 80px;
     filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
     transition: transform 0.2s;
-    flex-shrink: 0; /* Ensures logos don't shrink */
+    flex-shrink: 0; 
 }
 .logo:hover {
     cursor: pointer;
     transform: scale(1.05);
 }
 
-/* Center Title */
 .center-text {
     text-align: center;
-    flex-grow: 1;
+    flex: 1;
     padding: 0 20px;
 }
+
 .center-text h1 {
-    font-size: 30px;
-    font-weight: 800;
+    font-size: <%= loginSuccess ? "30px" : "28px" %>;
+    font-weight: bold;
     letter-spacing: 1px;
-    margin-bottom: 2px;
+    margin-bottom: 5px;
 }
+
 .center-text h2 {
-    font-size: 17px;
+    font-size: <%= loginSuccess ? "17px" : "18px" %>;
     font-weight: 500;
     opacity: 0.9;
 }
 
-/* ------------------------------------------------------------------- */
-/* === DROPDOWN NAVIGATION MENU STYLES === */
-/* ------------------------------------------------------------------- */
+/* === LOGIN FORM STYLES (Only applied when not logged in) === */
+<% if (!loginSuccess) { %>
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 160px);
+    width: 100%;
+}
+
+.login-form {
+    background: #fff;
+    border-radius: 15px;
+    padding: 40px 50px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.5s ease;
+    margin-top: 120px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.flash {
+    animation: flash 1s linear infinite alternate;
+}
+
+@keyframes flash {
+    from { color: #1e3c72; }
+    to { color: #2ecc71; }
+}
+h1 {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+h2 {
+    font-size: 16px;
+
+    margin-bottom: 20px;
+}
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: 0.3s;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #1e3c72;
+    box-shadow: 0 0 6px rgba(30, 60, 114, 0.4);
+    outline: none;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+input[type="submit"],
+input[type="reset"] {
+    width: 45%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+input[type="submit"] {
+    background-color: #1e3c72;
+}
+
+input[type="submit"]:hover {
+    background-color: #344fa1;
+}
+
+input[type="reset"] {
+    background-color: #c0392b;
+}
+
+input[type="reset"]:hover {
+    background-color: #e74c3c;
+}
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #303f9f;
+    color: #fff;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 13px;
+}
+<% } %>
+
+/* === DASHBOARD NAVBAR STYLES (Only applied when logged in) === */
+<% if (loginSuccess) { %>
 .navbar {
     position: fixed;
     top: 110px;
@@ -98,12 +294,10 @@ body {
     border-bottom: 2px solid #1e3c72;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     z-index: 999;
-    /* Use flex to align menu items and buttons */
     display: flex; 
-    justify-content: space-between; /* Push menu to left, buttons to right */
+    justify-content: space-between; 
 }
 
-/* Menu List Container */
 .navbar ul {
     list-style-type: none;
     margin: 0;
@@ -131,7 +325,6 @@ body {
     color: #ffffff;
 }
 
-/* Dropdown Sub-menu */
 .dropdown-content {
     display: none;
     position: absolute;
@@ -162,11 +355,10 @@ body {
     display: block;
 }
 
-/* === ACTION BUTTONS (Moved into Navbar) === */
 .action-buttons-container {
     display: flex;
     align-items: center;
-    padding: 0 15px; /* Add padding on the right side */
+    padding: 0 15px; 
     height: 100%;
 }
 
@@ -199,12 +391,9 @@ body {
     transform: translateY(-1px);
 }
 
-/* ------------------------------------------------------------------- */
-/* === MAIN CONTENT AREA & FOOTER (Kept Consistent) === */
-/* ------------------------------------------------------------------- */
 .main-content {
     position: fixed;
-    top: 160px; /* Header (110px) + Navbar (50px) */
+    top: 160px; 
     left: 0;
     right: 0;
     bottom: 50px;
@@ -218,13 +407,16 @@ body {
     border: none;
     background: transparent;
 }
+<% } %>
+
+/* === FOOTER (Combined styles) === */
 .footer {
-	display:flex;
+    display:flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: #1e3c72;
+    background-color: <%= loginSuccess ? "#1e3c72" : "#303f9f" %>;
     color: #fff;
     text-align: center;
     padding: 8px 0;
@@ -237,13 +429,14 @@ body {
 .footer img{
       height: 34px;
     }
-}
+
 </style>
 
 <script>
 function confirmLogout() {
     if (confirm("Are you sure you want to log out of the Gate Pass Management System?")) {
-        window.top.location.href = 'login1.jsp';
+        // Redirect to logout.jsp to destroy the session.
+        window.top.location.href = 'logout.jsp'; 
     }
 }
 function changePassword() {
@@ -259,22 +452,20 @@ function changePassword() {
 
 <body onload="document.login?.username?.focus()">
 
+<header class="header">
+    <img src="logo1.png" class="logo" alt="NFL Logo" <%= loginSuccess ? "onclick=\"window.location.href='login.jsp';\"" : "" %>>
+    <div class="center-text">
+        <h1>CISF GATE PASS MANAGEMENT SYSTEM</h1>
+        <h2>NATIONAL FERTILIZERS LIMITED, PANIPAT UNIT</h2>
+    </div>
+    <img src="logo2.png" class="logo" alt="CISF Logo" <%= loginSuccess ? "onclick=\"window.location.href='http://10.3.122.199/';\"" : "" %>>
+</header>
+
 <%
+    // --- 3. CONDITIONAL DISPLAY LOGIC ---
     if (loginSuccess) {
+        // Display Dashboard Content
 %>
-    <header class="header">
-        
-        <img src="logo1.png" class="logo" alt="NFL Logo" onclick="window.location.href='login.jsp';">
-
-        <div class="center-text">
-            <h1>CISF GATE PASS MANAGEMENT SYSTEM</h1>
-            <h2>NATIONAL FERTILIZERS LIMITED, PANIPAT UNIT</h2>
-        </div>
-        
-        <img src="logo2.png" class="logo" alt="CISF Logo" onclick="window.location.href='http://10.3.122.199/';">
-        
-    </header>
-
     <nav class="navbar">
         <ul>
         <li>
@@ -303,7 +494,7 @@ function changePassword() {
             	<a href="#" class="main-link">Contract Labour/Trainee </a>
                 <div class="dropdown-content">
                     <a href="ContractLabour.jsp" target="right">Contract Labour/Trainee Gate Pass</a>
-                    <a href="ContractLabourHistory.jsp" target="right">Contract Labour Traine/History</a>
+                    <a href="ContractLabourHistory.jsp" target="right">Contract Labour/Traine Pass History</a>
                 </div>
             </li>
             <li>
@@ -319,9 +510,8 @@ function changePassword() {
             <button class="action-button change-password-button" onclick="changePassword()">
                 🔑 Change Password
             </button>
-            
             <button class="action-button logout-button" onclick="confirmLogout()">
-                🚪 Log Out
+               Log Out
             </button>
         </div>
     </nav>
@@ -329,17 +519,59 @@ function changePassword() {
     <main class="main-content">
         <iframe src="" name="right" scrolling="yes"></iframe>
     </main>
-
-
 <%
     } else {
-    	response.sendRedirect("login1.jsp");
-    }
+        // Display Login Form Content
 %>
+<div class="login-container">
+    <div class="login-form">
+        <form name="login" action="login.jsp" method="post"> 
+            <input type="hidden" name="formSubmitted" value="true">
+            <img src="logo1.png" alt="NFL Logo" height="160" width="150">
+            <h1 class="flash">CISF GATEPASS MANAGEMENT SYSTEM</h1>
+            <h2>NFL PANIPAT UNIT</h2>
+
+            <div class="table-container">
+                <table>
+                    <tr>
+                        <td><label for="username">Username:</label></td>
+                        <td><input type="text" id="username" name="username" required></td>
+                    </tr>
+                    <tr>
+                        <td><label for="password">Password:</label></td>
+                        <td><input type="password" id="password" name="password" required></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="button-container">
+                <input type="submit" value="Login">
+                <input type="reset" value="Cancel">
+            </div>
+
+            <%
+                if (errorMessage != null) {
+            %>
+                <p class="error-label"><%= errorMessage %></p>
+            <% } %>
+        </form>
+    </div>
+</div>
+<%
+    } // End of Conditional Display
+%>
+
 <div class="footer">
-<img src="logo2.png" alt="CISF Logo">
- &nbsp;
+    <% if (loginSuccess) { %>
+        <img src="logo2.png" alt="CISF Logo">
+        &nbsp;
+    <% } %>
     <p>&copy; <%= java.time.Year.now() %>, IT Department NFL, Panipat</p>
 </div>
+
+<script>
+console.log("Designed and Developed by Tawrej Ansari");
+</script>
+
 </body>
 </html>

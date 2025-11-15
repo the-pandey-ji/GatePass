@@ -2,6 +2,47 @@
 <%@ page import="java.sql.*" %>
 <%@ page import="gatepass.Database" %>
 <%
+    // ==========================================================
+    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
+    // ==========================================================
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
+    response.setDateHeader("Expires", 0);        // Proxies.
+
+    // ==========================================================
+    // 🔑 SESSION AUTHENTICATION CHECK
+    // ==========================================================
+    // Check if the "username" session attribute exists (set during successful login)
+    if (session.getAttribute("username") == null) {
+        // If not authenticated, redirect to the main login page
+        response.sendRedirect("login.jsp");
+        return; // Stop processing the rest of the page
+    }
+    // If the session is valid, the code continues to the rest of the page.
+%>
+<%
+// 1. Database connection and ID generation
+Connection conn1 = null;
+Statement st1 = null;
+ResultSet rs1 = null;
+int id = 1;
+
+try {
+    gatepass.Database db1 = new gatepass.Database();
+    conn1 = db1.getConnection();
+    st1 = conn1.createStatement();
+    // Assuming Oracle NVL function for handling the initial NULL max value
+    rs1 = st1.executeQuery("SELECT NVL(MAX(ID), 1) + 1 FROM GATEPASS_CONTRACT");
+    if (rs1.next()) {
+        id = rs1.getInt(1);
+    }
+} catch (SQLException e) {
+    System.err.println("Database error generating contract ID: " + e.getMessage());
+} finally {
+    if (rs1 != null) try { rs1.close(); } catch (SQLException ignore) {}
+    if (st1 != null) try { st1.close(); } catch (SQLException ignore) {}
+    if (conn1 != null) try { conn1.close(); } catch (SQLException ignore) {}
+}
 %>
 <html>
 <head>
@@ -173,32 +214,6 @@ input[type="submit"]:hover, input[type="reset"]:hover {
     }
 </script>
 
-
-<%
-// 1. Database connection and ID generation
-Connection conn1 = null;
-Statement st1 = null;
-ResultSet rs1 = null;
-int id = 1;
-
-try {
-    gatepass.Database db1 = new gatepass.Database();
-    conn1 = db1.getConnection();
-    st1 = conn1.createStatement();
-    // Assuming Oracle NVL function for handling the initial NULL max value
-    rs1 = st1.executeQuery("SELECT NVL(MAX(ID), 1) + 1 FROM GATEPASS_CONTRACT");
-    if (rs1.next()) {
-        id = rs1.getInt(1);
-    }
-} catch (SQLException e) {
-    System.err.println("Database error generating contract ID: " + e.getMessage());
-} finally {
-    if (rs1 != null) try { rs1.close(); } catch (SQLException ignore) {}
-    if (st1 != null) try { st1.close(); } catch (SQLException ignore) {}
-    if (conn1 != null) try { conn1.close(); } catch (SQLException ignore) {}
-}
-%>
-
 </head>
 
 <body onkeydown="if(event.keyCode==13){event.keyCode=9; return event.keyCode}">
@@ -314,11 +329,13 @@ try {
             <td width="40%">
                 <div class="document-upload-container">
                     <h3>Contract Document Upload 📄</h3>
+                    (Optional)
                     <input type="file" id="Document" name="Document" 
                            accept=".pdf, .doc, .docx, .jpg, .jpeg, .png"  />
                     <p style="font-size: 13px; color: #555;">
+                    
                         (Max size 5MB. Accepted formats: PDF, DOC, DOCX, JPG. JPEG, PNG.)
-                        (OPTIONAL)
+                        
                     
                     </p>
                     </div>

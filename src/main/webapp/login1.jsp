@@ -1,21 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page language="java" import="java.util.*, gatepass.Database" %>
 <%@ page import="java.sql.*,java.time.*,java.time.format.DateTimeFormatter,java.io.*,java.util.Base64,gatepass.CommonService"%>
-<%
-    String username = request.getParameter("username");
-    String password = request.getParameter("password");
-    String formSubmitted = request.getParameter("formSubmitted");
-    boolean loginSuccess = false;
-
-    if ("true".equals(formSubmitted)) {
-        if ("gatepass".equals(username) && "gatepass".equals(password)) {
-            loginSuccess = true;
-            session.setAttribute("username", username);
-        } else {
-            request.setAttribute("error", "*Incorrect Username or Password");
-        }
-    }
-%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,6 +30,17 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+.error-label {
+    color: #c0392b; /* Bright red for visibility */
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 15px; /* Spacing from buttons */
+    padding: 8px;
+    border: 1px solid #e74c3c;
+    background-color: #fceae9; /* Light background for contrast */
+    border-radius: 5px;
 }
 
 /* === HEADER === */
@@ -123,17 +119,7 @@ body {
     to { color: #2ecc71; }
 }
 
-h1 {
-    font-size: 22px;
-    font-weight: bold;
-    margin-top: 10px;
-}
 
-h2 {
-    font-size: 16px;
-
-    margin-bottom: 20px;
-}
 
 /* === INPUTS === */
 input[type="text"],
@@ -192,17 +178,7 @@ input[type="reset"]:hover {
 }
 
 /* === FOOTER === */
-.footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: #303f9f;
-    color: #fff;
-    text-align: center;
-    padding: 8px 0;
-    font-size: 13px;
-}
+
 </style>
 </head>
 
