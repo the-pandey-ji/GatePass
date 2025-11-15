@@ -7,7 +7,7 @@
 <%@ page language="java" import="java.sql.*" %>
 <%@ page language="java" import="java.io.*" %>
 <%@ page language="java" import="gatepass.Database.*" %>
-
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" >
@@ -96,6 +96,12 @@ div#container
             size: auto;   /* auto is the initial value */
             margin: 0mm;  /* this affects the margin in the printer settings */
         }
+        footer {
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+  margin-top: 15px;
+}
 </style>
 <style type="text/css">
 body
@@ -215,7 +221,7 @@ a:hover
 </td></tr>	
 </table>
 
-
+<footer>© 2025 Gate Pass Management System | NFL Panipat</footer>
 </body>
 <% } rs.close();conn.close();
  conn1.close();

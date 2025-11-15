@@ -83,12 +83,5 @@ Connection conn1 = null;
 </div>
 
 
-
-
-
-
-
-
-
 </body>
 </html>

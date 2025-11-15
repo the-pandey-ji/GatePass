@@ -72,6 +72,12 @@
                 padding: 0;
             }
         }
+        footer {
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+  margin-top: 15px;
+}
     </style>
 </head>
 
@@ -201,6 +207,6 @@
     //     window.print();
     // };
 </script>
-
+<footer>© 2025 Gate Pass Management System | NFL Panipat</footer>
 </body>
 </html>

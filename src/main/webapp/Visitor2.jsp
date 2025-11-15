@@ -53,6 +53,7 @@
         display: none; /* hide webcam section in print */
     }
 }
+
 </style>
 <title>Gate Pass Entry</title>
 <meta charset="UTF-8">

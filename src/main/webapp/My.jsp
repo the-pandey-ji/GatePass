@@ -1,218 +1,234 @@
-<%@ page language="java" import="java.sql.*" %>
-<%@page import="java.lang.*" %>
-<%@page import="org.apache.commons.fileupload.FileItem" %>
-<%@page import="org.apache.commons.fileupload.FileUploadException" %>
-<%@page import="org.apache.commons.fileupload.disk.DiskFileItemFactory" %>
-<%@page import="org.apache.commons.fileupload.servlet.ServletFileUpload" %>
-<%@page import="org.apache.commons.io.output.*" %>
+<%@ page language="java" import="java.sql.*,java.time.*,java.time.format.DateTimeFormatter,java.io.*,java.util.Base64,gatepass.Database"%>
+<%@ page import="org.apache.commons.fileupload.*"%>
+<%@ page import="org.apache.commons.fileupload.disk.*"%>
+<%@ page import="org.apache.commons.fileupload.servlet.*"%>
+<%@ page import="org.apache.commons.io.output.*"%>
+<%@ page import="javaQuery.j2ee.GeoLocation"%>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<%@page import="java.io.*" %>
-<%@page import="javaQuery.j2ee.GeoLocation" %>
-
-
+<!DOCTYPE html>
 <html>
 <head>
-<%
-	Connection conn = null;
-    	Statement st=null;
-    	 String id=request.getParameter("id");
-  System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"+id);
+<title>Visitor Revisit Entry</title>
 
-    	gatepass.Database db = new gatepass.Database();	
-		conn = db.getConnection();
-	
-		System.out.println("Inside class DatabaseConnection----");
-		st=conn.createStatement();
-		ResultSet rs = st.executeQuery("select * from visitor where id='"+id+"'");
-		while(rs.next()){
-%>
-<title>Gate Pass Entry Details</title>
-<script type="text/javascript" language="javascript">
-        function Blank_TextField_Validator()
-{
-// Check the value of the element named text_name from the form named text_form
-if (text_form.text_name.value == "")
-{
-  // If null display and alert box
-   alert("Please fill the NAME");
-  // Place the cursor on the field for revision
-   text_form.text_name.focus();
-  // return false to stop further processing
-   return (false);
-}
-if (text_form.line1.value == "")
-{
-  // If null display and alert box
-   alert("Please fill the address");
-  // Place the cursor on the field for revision
-   text_form.line1.focus();
-  // return false to stop further processing
-   return (false);
-}
-if (text_form.vehicle.value == "")
-{
-  // If null display and alert box
-   alert("Please fill the vehicle number");
-  // Place the cursor on the field for revision
-   text_form.vehicle.focus();
-  // return false to stop further processing
-   return (false);
+<!-- 📸 CAMERA SCRIPT -->
+<script>
+let currentStream;
+function openCamera() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const previewImg = document.getElementById("photoPreview");
+  canvas.style.display = "none"; 
+  previewImg.style.display = "none"; 
+  video.style.display = "block"; 
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Camera not supported in this browser.");
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => { currentStream = stream; video.srcObject = stream; })
+    .catch(err => { alert("Error accessing camera: " + err.message); });
 }
 
-
-
-
-if (text_form.district.value == "")
-{
-  // If null display and alert box
-   alert("Please fill the district");
-  // Place the cursor on the field for revision
-   text_form.district.focus();
-  // return false to stop further processing
-   return (false);
+function capturePhoto() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const previewImg = document.getElementById("photoPreview");
+  const context = canvas.getContext("2d");
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+  const dataUrl = canvas.toDataURL("image/png");
+  previewImg.src = dataUrl;
+  previewImg.style.display = "block";
+  video.style.display = "none";
+  canvas.style.display = "none";
+  document.getElementById("imageData").value = dataUrl;
 }
 
-
-if (text_form.state.value == "")
-{
-  // If null display and alert box
-   alert("Please fill the state");
-  // Place the cursor on the field for revision
-   text_form.state.focus();
-  // return false to stop further processing
-   return (false);
+function retakePhoto() {
+  document.getElementById("photoPreview").style.display = "none";
+  openCamera();
 }
 
-
-if (text_form.material.value == "")
-{
-  // If null display and alert box
-   alert("Please fill the material");
-  // Place the cursor on the field for revision
-   text_form.material.focus();
-  // return false to stop further processing
-   return (false);
+function validateForm() {
+  if (!document.getElementById("imageData").value) {
+    alert("Please capture a photo before submitting!");
+    return false;
+  }
+  return true;
 }
+</script>
 
-
-if (text_form.purpose.value == "")
-{
-  // If null display and alert box
-   alert("Please fill the purpose");
-  // Place the cursor on the field for revision
-   text_form.purpose.focus();
-  // return false to stop further processing
-   return (false);
+<!-- 🌈 Modern CSS -->
+<style>
+body {
+	font-family: "Segoe UI", Arial, sans-serif;
+	background: linear-gradient(135deg, #dfe9f3, #ffffff);
+	margin: 0;
+	padding: 30px;
 }
-
-// If text_name is not null continue processing
-return (true);
+.container {
+	background-color: white;
+	width: 1100px;
+	margin: auto;
+	padding: 25px 40px;
+	border-radius: 15px;
+	box-shadow: 0px 5px 25px rgba(0, 0, 0, 0.2);
+	animation: fadeIn 1s ease;
 }
-
-
-function executeCommands()
-{
-// Instantiate the Shell object and invoke
-//its execute method.
-
-  WshShell = new ActiveXObject("Wscript.Shell"); //Create WScript Object
-   WshShell.run("C://Users/cam.exe");
-
+@keyframes fadeIn {
+	from {opacity: 0; transform: translateY(20px);}
+	to {opacity: 1; transform: translateY(0);}
 }
-
-
-    </script>
-       
-
+h2 {
+	text-align: center;
+	color: #003366;
+	margin-bottom: 20px;
+}
+table {
+	width: 100%;
+}
+input[type="text"], input[type="date"], input[type="time"] {
+	padding: 6px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	width: 90%;
+	transition: 0.2s;
+}
+input[type="text"]:focus, input[type="date"]:focus, input[type="time"]:focus {
+	border-color: #0078d4;
+	box-shadow: 0 0 4px rgba(0, 120, 212, 0.3);
+	outline: none;
+}
+button, input[type="submit"], input[type="reset"] {
+	background-color: #0078d4;
+	border: none;
+	color: white;
+	padding: 8px 18px;
+	font-size: 14px;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: 0.3s;
+	margin: 5px;
+}
+button:hover, input[type="submit"]:hover, input[type="reset"]:hover {
+	background-color: #005fa3;
+	transform: translateY(-2px);
+}
+.video-container {
+	text-align: center;
+	background: #f8faff;
+	border-radius: 10px;
+	padding: 15px;
+	box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.1);
+}
+#video, #canvas, #photoPreview {
+	border-radius: 8px;
+	border: 1px solid #ccc;
+}
+#photoPreview {
+	width: 320px;
+	height: 240px;
+	object-fit: cover;
+	display: none;
+}
+td {
+	vertical-align: top;
+	padding: 5px;
+}
+td:first-child {
+	font-weight: bold;
+	color: #333;
+}
+</style>
 </head>
-<body bgcolor="#CED8F6" onload="executeCommands();">
-<div id="gatepass" style="position:absolute;background-color:#E6E6E6;left:200px;width:570px;height:530px;">
-<form action="http://10.3.111.103:8080/visitor/up" method="post" name="text_form"
-                        enctype="multipart/form-data"  onsubmit="return Blank_TextField_Validator()">
-<div id="bv_Text1" style="margin:0;padding:0;position:absolute;left:171px;top:5px;width:315px;height:27px;text-align:center;z-index:21;">
-<h3>Gate Pass Details</h3></div>
-<div id="bv_Text2" style="margin:0;padding:0;position:absolute;left:97px;top:97px;width:150px;height:22px;text-align:left;z-index:22;">
-<h6>Name</h6></div>
-<input type="text" id="Editbox1"  style="position:absolute;left:344px;top:90px;width:197px;height:25px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:23" name="text_name" value="<%=rs.getString(1)%>">
 
-<div id="bv_Text3" style="margin:0;padding:0;position:absolute;left:96px;top:155px;width:150px;height:22px;text-align:left;z-index:24;">
-<h6>Address</h6>
+<body onload="openCamera()">
+
+<%
+    String prevId = request.getParameter("id");
+    Database db = new Database();
+    Connection conn = db.getConnection();
+
+    // Fetch previous visitor record
+    Statement st = conn.createStatement();
+    ResultSet rs = st.executeQuery("SELECT * FROM visitor WHERE ID='" + prevId + "'");
+    if (!rs.next()) {
+        out.println("<p style='color:red;text-align:center;'>❌ No record found for Visitor ID: " + prevId + "</p>");
+        return;
+    }
+
+    // Generate new pass ID
+    Statement st2 = conn.createStatement();
+    ResultSet rs2 = st2.executeQuery("SELECT MAX(ID) FROM visitor");
+    int newId = 1;
+    if (rs2.next()) newId = rs2.getInt(1) + 1;
+    rs2.close(); st2.close();
+
+    // Current Date + Time
+    LocalDate currentDate = LocalDate.now();
+    LocalTime currentTime = LocalTime.now();
+    String formattedDate = currentDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+    String formattedTime = currentTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+%>
+
+<div class="container">
+	<h2>VISITOR REVISIT REGISTRATION</h2>
+	<form action="visitor.jsp" method="post" onsubmit="return validateForm()">
+	<input type="hidden" id="imageData" name="imageData">
+
+	<table>
+		<tr>
+			<td width="60%">
+				<table cellpadding="6">
+					<tr><td>New Visitor Pass No</td><td><input type="text" name="id" value="<%=newId%>" readonly></td></tr>
+					<tr><td>Previous Visit ID</td><td><input type="text" name="previousId" value="<%=prevId%>" readonly></td></tr>
+
+					<tr><td>Name</td><td><input type="text" name="name" value="<%=rs.getString("NAME")%>"></td></tr>
+					<tr><td>Father Name</td><td><input type="text" name="fathername" value="<%=rs.getString("FATHERNAME")%>"></td></tr>
+					<tr><td>Material</td><td><input type="text" name="material" value="<%=rs.getString("MATERIAL")%>"></td></tr>
+					<tr><td>Age</td><td><input type="text" name="age" value="<%=rs.getString("AGE")%>"></td></tr>
+					<tr><td>Address</td><td><input type="text" name="address" value="<%=rs.getString("ADDRESS")%>"></td></tr>
+					<tr><td>State</td><td><input type="text" name="state" value="<%=rs.getString("STATE")%>"></td></tr>
+					<tr><td>District</td><td><input type="text" name="district" value="<%=rs.getString("DISTRICT")%>"></td></tr>
+					<tr><td>Pincode</td><td><input type="text" name="pincode" value="<%=rs.getString("PINCODE")%>"></td></tr>
+					<tr><td>Nationality</td><td><input type="text" name="nationality" value="<%=rs.getString("NATIONALITY") != null ? rs.getString("NATIONALITY") : "INDIAN"%>"></td></tr>
+					<tr><td>Telephone</td><td><input type="text" name="number" value="<%=rs.getString("PHONE")%>"></td></tr>
+					<tr><td>Vehicle Number</td><td><input type="text" name="vehicle" value="<%=rs.getString("VEHICLE")%>"></td></tr>
+					<tr><td>Date</td><td><input type="date" name="date" value="<%=formattedDate%>" readonly></td></tr>
+					<tr><td>Time</td><td><input type="time" name="time" value="<%=formattedTime%>" readonly></td></tr>
+					<tr><td>Officer to Meet</td><td><input type="text" name="officertomeet" value="<%=rs.getString("OFFICERTOMEET")%>"></td></tr>
+					<tr><td>Purpose</td><td><input type="text" name="purpose" value="<%=rs.getString("PURPOSE")%>"></td></tr>
+					<tr>
+						<td colspan="2" align="center">
+							<input type="submit" value="Generate Revisit Pass">
+							<input type="reset" value="Reset">
+						</td>
+					</tr>
+				</table>
+			</td>
+
+			<!-- 📷 Live Camera -->
+			<td width="40%">
+				<div class="video-container">
+					<h3>Live Camera</h3>
+					<video id="video" width="320" height="240" autoplay></video>
+					<canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+					<img id="photoPreview" alt="Captured Photo Preview">
+					<br><br>
+					<button type="button" onclick="capturePhoto()">Capture Photo</button>
+					<button type="button" onclick="retakePhoto()">Retake Photo</button>
+				</div>
+			</td>
+		</tr>
+	</table>
+	</form>
 </div>
 
-
-<div id="bv_xt3" style="margin:0;padding:0;position:absolute;left:240px;top:130px;width:150px;height:22px;text-align:left;z-index:24;">
-<h6>Address</h6></div>
-<input type="text" value="<%=rs.getString(2)%>"  name="line1" id="TextArea1" style="position:absolute;left:346px;top:125px;width:200px;height:20px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:25">
-
-
-
-<div id="bv_Te" style="margin:0;padding:0;position:absolute;left:240px;top:155px;width:150px;height:22px;text-align:left;z-index:24;">
-<h6>District</h6>
-</div>
-<input type="text" name="district" value="<%=rs.getString(14)%>"  id="TextArea1" style="position:absolute;left:346px;top:150px;width:200px;height:22px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:25" >
-
-
-<div id="bvTex" style="margin:0;padding:0;position:absolute;left:240px;top:180px;width:150px;height:22px;text-align:left;z-index:24;">
-<h6>state</h6>
-</div>
-<select name="state" size="1" id="Combobox1" class="Heading 5 <h6>" style="position:absolute;left:346px;top:175px;width:200px;height:22px;z-index:31">
-<option value="<%=rs.getString(13)%>"><%=rs.getString(13)%></option>
-
-
-</select>
-
-
-<div id="bvxt3" style="margin:0;padding:0;position:absolute;left:240px;top:205px;width:150px;height:22px;text-align:left;z-index:24;">
-<h6>Pin code</h6>
-</div>
-<input type="text" value="<%=rs.getString(15)%>" name="pincode" id="TextArea1" style="position:absolute;left:346px;top:200px;width:201px;height:22px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:25" >
-
-
-
-
-
-
-
-<div id="bv_Text4" style="margin:0;padding:0;position:absolute;left:98px;top:260px;width:150px;height:22px;text-align:left;z-index:26;">
-<h6>Material</h6></div>
-<input type="text" name="material" value="<%=rs.getString(3)%>" id="TextArea2" style="position:absolute;left:346px;top:240px;width:200px;height:41px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:27" >
-<div id="bv_Text5" style="margin:0;padding:0;position:absolute;left:96px;top:310px;width:221px;height:22px;text-align:left;z-index:28;">
-<h6>Vehicle Number if any:</h6></div>
-<input type="text" value="<%=rs.getString(4)%>" id="Editbox2" style="position:absolute;left:347px;top:306px;width:197px;height:20px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:29" name="vehicle" value="">
-<div id="6" style="margin:0;padding:0;position:absolute;left:93px;top:350px;width:203px;height:22px;text-align:left;z-index:30;">
-<h6>Officer whom to meet</h6></div>
-
-<select name="officertomeet" size="1" id="Combobox1" class="Heading 5 <h6>" onBlur="javascript:changeMe();" style="position:absolute;left:348px;top:350px;width:203px;height:52px;z-index:31">
-
-
-
-
-<option value="<%=rs.getString(5)%>"><%=rs.getString(5)%></option>
-
-</select>
-<input type="text" name=department disabled="disabled" size="1" style="margin:0;padding:0;position:absolute;left:0px;top:0px;width:2px;height:1px;text-align:left;">
-<div id="bv_Text8" style="margin:0;padding:0;position:absolute;left:96px;top:410px;width:150px;height:22px;text-align:left;z-index:34;">
-<h6>Purpose</h6></div>
-<input type="text" value="<%=rs.getString(7)%>" id="Editbox5" style="position:absolute;left:350px;top:410px;width:194px;height:20px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:35" name="purpose">
-
-
-
-<div id="bv_Text8" style="margin:0;padding:0;position:absolute;left:96px;top:460px;width:150px;height:22px;text-align:left;z-index:34;">
-<h6>Telephone number</h6></div>
-<input type="text" id="Editbox5" value="<%=rs.getString(16)%>" style="position:absolute;left:350px;top:460px;width:194px;height:20px;border:1px #C0C0C0 solid;font-family:'Courier New';font-size:16px;z-index:35" name="number" value="">
-<input type="submit" id="Button1" name="Button1" value="Submit" style="position:absolute;left:250px;top:490px;width:75px;height:24px;font-family:Arial;font-size:13px;z-index:36">
-<input type="reset" id="Button3" name="reset" value="Reset" style="position:absolute;left:450px;top:490px;width:75px;height:24px;font-family:Arial;font-size:13px;z-index:38">
-<div id="bv_Text9" style="margin:0;padding:0;position:absolute;left:95px;top:543px;width:150px;height:22px;text-align:left;z-index:39;">
-</div>
-
-</form>
-
-</div>
-
-
-<% } rs.close();conn.close();%>
-
-
+<%
+	rs.close();
+	conn.close();
+%>
 
 </body>
 </html>

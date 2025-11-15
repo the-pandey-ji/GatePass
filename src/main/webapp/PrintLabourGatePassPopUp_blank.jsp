@@ -1,4 +1,5 @@
 <%@ page language="java" import="java.util.*,java.sql.*,gatepass.Database" pageEncoding="ISO-8859-1"%>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
@@ -78,6 +79,12 @@
             size: auto;
             margin: 0mm;
         }
+        footer {
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+  margin-top: 15px;
+}
     </style>
 </head>
 
@@ -193,6 +200,6 @@
         }
     }
 %>
-
+<footer>© 2025 Gate Pass Management System | NFL Panipat</footer>
 </body>
 </html>

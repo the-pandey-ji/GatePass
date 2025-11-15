@@ -8,7 +8,7 @@
 <head>
     <title>display data from the table using jsp</title>
 </head>
-<body>
+<body bg-color="linear-gradient(135deg, #dfe9f3, #ffffff);">
 
 <%		String state= request.getParameter("state");
 	System.out.println("state-__"+state); 

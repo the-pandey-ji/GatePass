@@ -1,54 +1,148 @@
-<%@ page language="java" import="java.util.*" pageEncoding="ISO-8859-1"%>
-<%@ page  import="java.sql.*" %>
-<%@page import="java.lang.*" %>
-<%@ page language="java" import="gatepass.Database.*" %>
-<%
-String path = request.getContextPath();
-String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
-%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*" %>
+<%@ page import="gatepass.Database" %>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-  <head>
-    <base href="<%=basePath%>">
-    
-    <title>My JSP 'selectstate.jsp' starting page</title>
-    
-	<meta http-equiv="pragma" content="no-cache">
-	<meta http-equiv="cache-control" content="no-cache">
-	<meta http-equiv="expires" content="0">    
-	<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
-	<meta http-equiv="description" content="This is my page">
-	<!--
-	<link rel="stylesheet" type="text/css" href="styles.css">
-	-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Officer</title>
 
-  </head>
-  
-  <body bgcolor="#CED8F6">
-   <form action="vname.jsp" >
-  <h2 style="position:absolute;left:100px;top:165px;width:200px;height:22px;z-index:31">Select Officer</h2> 
-  <select name="officertomeet" size="1" id="Combobox1" class="Heading 5 <h5>" style="position:absolute;left:346px;top:180px;width:200px;height:22px;z-index:31">
-  
-  <%
-  	Connection conn = null;
-      	Statement st=null;
-      	int id=0;
-      	gatepass.Database db = new gatepass.Database();	
-  		conn = db.getConnection();
-  		st=conn.createStatement();
-  		ResultSet rs = st.executeQuery("select officers from officertomeet"); // Executing the Query
-  		while(rs.next()){
-  %>
-		
- 
-  
-<option value="<%=rs.getString(1)%>"><%=rs.getString(1)%></option>
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta http-equiv="expires" content="0">
 
-<% }conn.close(); %>
-</select>
-<input type="Submit" name="view" value="View" style="position:absolute;left:579px;top:175px;width:100px;height:30px;z-index:31">
-   
-   </form>
-  </body>
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: background: #f4f7f6;;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 80px auto;
+            padding: 25px 35px;
+            background-color: #fdfdfd;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h2.header {
+            color: #003366;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        select, input[type="submit"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        select {
+            width: 100%;
+        }
+
+        input[type="submit"] {
+            background-color: #1e3c72;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 13px;
+            color: #555;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="form-container">
+        <h2 class="header">Select Officer</h2>
+
+        <form action="vname.jsp" method="get">
+            <label for="officertomeet">Officer to Meet:</label>
+            <select name="officertomeet" id="officertomeet" required>
+                <%
+                    // Define resources
+                    Connection conn = null;
+                    Statement st = null;
+                    ResultSet rs = null;
+                    try {
+                        Database db = new Database();
+                        conn = db.getConnection();
+
+                        if (conn != null) {
+                            String sql = "SELECT officers FROM officertomeet ORDER BY officers ASC";
+                            st = conn.createStatement();
+                            rs = st.executeQuery(sql);
+
+                            boolean hasData = false;
+                            while (rs.next()) {
+                                hasData = true;
+                                String officerName = rs.getString("officers");
+                %>
+                                <option value="<%= officerName %>"><%= officerName %></option>
+                <%
+                            }
+
+                            if (!hasData) {
+                %>
+                                <option value="" disabled>No officers found</option>
+                <%
+                            }
+                        } else {
+                %>
+                            <option value="" disabled>⚠️ Database connection failed.</option>
+                <%
+                        }
+                    } catch (SQLException e) {
+                        System.err.println("Database Error: " + e.getMessage());
+                %>
+                        <option value="" disabled>⚠️ Error loading officers.</option>
+                <%
+                    } finally {
+                        try { if (rs != null) rs.close(); } catch (SQLException ignore) {}
+                        try { if (st != null) st.close(); } catch (SQLException ignore) {}
+                        try { if (conn != null) conn.close(); } catch (SQLException ignore) {}
+                    }
+                %>
+            </select>
+
+            <input type="submit" value="View">
+        </form>
+    </div>
+
+    <footer>
+        © <%= java.time.Year.now() %> Gate Pass Management System | NFL Panipat
+    </footer>
+</body>
 </html>

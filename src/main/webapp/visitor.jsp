@@ -68,7 +68,7 @@
 <style>
 body {
 	font-family: "Segoe UI", Arial, sans-serif;
-	background: linear-gradient(135deg, #89f7fe, #66a6ff);
+	background: background: #f4f7f6;;
 	margin: 0;
 	padding: 30px;
 }
@@ -405,11 +405,7 @@ rs1.close(); st1.close(); conn1.close();
 			</tr>
 		</table>
 	</div>
-	<footer>
-		©
-		<%=java.time.Year.now()%>
-		Gate Pass Management System | NFL Panipat
-	</footer>
+
 	
 	<script>
 let pincodeData = {};

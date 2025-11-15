@@ -8,6 +8,16 @@
 <html>
 <head>
     <title>display data from the table using jsp</title>
+    	<style>
+    
+body {
+	font-family: "Segoe UI", Arial, sans-serif;
+	background: linear-gradient(135deg, #dfe9f3, #ffffff);
+	margin: 0;
+	padding: 30px;
+}
+
+</style>
 </head>
 <body>
 
@@ -71,7 +81,7 @@ Statement st = conn.createStatement();
    		
    		<TD><%=rs.getString(12)%></TD>
         <TD><%=rs.getString(10)%></TD>
-          <td align="left" width="100px" height="70" rowspan="0" colspan="0" bgcolor="lightblue" bordercolor="#400040"><a href="http://<%=ip %>/visitor/name?id=<%=rs.getString(11) %>"><img src="http://10.3.122.199:8081/visitor/name?id=<%=rs.getString(11) %>" alt="" name="image5" width="100" height="70" /> </a></td>
+          <td ><a href="http://<%=ip %>/visitor/name?id=<%=rs.getString(11) %>"><img src="http://10.3.122.199:8081/visitor/name?id=<%=rs.getString(11) %>" alt="" name="image5" width="100" height="70" /> </a></td>
         
          <TD><%=rs.getString(7)%></TD>
         <TD><%=rs.getString(3)%></TD>

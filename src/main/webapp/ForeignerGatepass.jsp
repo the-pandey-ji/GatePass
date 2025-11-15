@@ -67,7 +67,7 @@
 <style>
 body {
 	font-family: "Segoe UI", Arial, sans-serif;
-	background: linear-gradient(135deg, #89f7fe, #66a6ff);
+	background: #f4f7f6;
 	margin: 0;
 	padding: 30px;
 }
@@ -273,10 +273,10 @@ conn.close();
 			</tr>
 		</table>
 	</div>
-	<footer>
+<%-- 	<footer>
 		©
 		<%=java.time.Year.now()%>
 		Gate Pass Management System | NFL Panipat
-	</footer>
+	</footer> --%>
 </body>
 </html>

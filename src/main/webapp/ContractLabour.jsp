@@ -12,7 +12,8 @@
 <head>
 <title>Contract Labour / Trainee Gate Pass</title>
 
- 
+
+
 <!-- Camera Script -->
 <script>
 let currentStream;
@@ -134,7 +135,7 @@ function enableRefNo() {
 <style>
 body {
   font-family: "Segoe UI", Arial, sans-serif;
-  background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+  background: #f4f7f6;;
   margin: 0;
   padding: 30px;
 }
@@ -228,12 +229,7 @@ button:hover, input[type="submit"]:hover, input[type="reset"]:hover {
   display: none;
 }
 
-footer {
-  text-align: center;
-  font-size: 12px;
-  color: #777;
-  margin-top: 15px;
-}
+
 </style>
 
 <%
@@ -328,7 +324,7 @@ rs1.close(); st1.close(); conn1.close();
 </tr>
 
 <tr>
-  <td>Contractor’s Name / Address</td>
+  <td>Contractor Name / Address</td>
   <td><input type="text" id="contrctrNameAddress" name="contrctrNameAddress" 
              onkeyup="capLtr(this.value,'contrctrNameAddress');" 
              onkeypress="return /[A-Za-z0-9\s,.-]/.test(event.key);" 
@@ -387,6 +383,6 @@ rs1.close(); st1.close(); conn1.close();
     </tr>
   </table>
 </div>
-<footer>© <%= java.time.Year.now() %> Gate Pass Management System | NFL Panipat </footer>
+
 </body>
 </html>

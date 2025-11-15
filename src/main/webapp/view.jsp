@@ -1,139 +1,351 @@
-<%@ page language="java" import="java.util.*" pageEncoding="ISO-8859-1"%>
-<%
-String path = request.getContextPath();
-String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+path+"/";
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.sql.*" %>
+<%@ page import="gatepass.Database" %>
+<%@ page import="java.io.IOException" %> 
+<%@ page import="java.text.*" %> 
+<%@ page import="java.util.Date" %>
+
+<%!
+// Define the column names for the table headers in a declaration block (available globally)
+private static final String[] HEADERS = {
+    "Visitor ID", "Photo", "Name", "Father Name", "Address", "Contact", "Date of Visit", "Time", "Officer to Meet", "Purpose", "Material", "Action"
+};
+// Define the date format mask for Oracle, matching the YYYY-MM-DD input
+private static final String DATE_FORMAT_MASK = "YYYY-MM-DD"; 
 %>
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-  <head>
-    <base href="<%=basePath%>">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visitor Records by Date</title>
     
-    <title>My JSP 'view.jsp' starting page</title>
+    <meta http-equiv="pragma" content="no-cache">
+    <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="expires" content="0">
+
+    <style>
+        /* Base Styling */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
+        h3 { color: #1e3c72; text-align: center; margin-top: 10px; margin-bottom: 25px; text-transform: uppercase; }
+        
+        /* --- FORM STYLING --- */
+        #dateForm {
+            background: #ffffff;
+            max-width: 700px;
+            margin: 0 auto 30px; 
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            justify-content: space-between;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        
+        .form-group label {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        #dateForm input[type="date"] {
+            padding: 10px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+            height: 40px;
+            box-sizing: border-box;
+        }
+
+        #dateForm input[type="submit"] {
+            background-color: #1e3c72;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.1s;
+            font-size: 15px; 
+            font-weight: bold;
+            height: 40px;
+            padding: 0 20px;
+            box-sizing: border-box;
+            width: 150px;
+        }
+
+        #dateForm input[type="submit"]:hover {
+            background-color: #0056b3;
+            transform: scale(1.02);
+        }
+        /* --- END FORM STYLING --- */
+
+        /* --- TABLE & SEARCH STYLING --- */
+        #searchInput {
+            width: 100%;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        #searchInput:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        #visitorTable { 
+            border-collapse: collapse; 
+            width: 100%; 
+            margin-top: 20px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+            border-radius: 8px; 
+            overflow: hidden; 
+            background-color: white;
+        }
+        #visitorTable th { 
+            background-color: #1e3c72; 
+            color: white; 
+            padding: 12px 15px; 
+            text-align: left; 
+            font-size: 15px; 
+            font-weight: bold;
+            border: none; 
+        } 
+        #visitorTable td { 
+            border: 1px solid #ddd; 
+            padding: 10px 15px; 
+            text-align: left; 
+            font-size: 14px; 
+            background-color: #ffffff; 
+            color: #333;
+        }
+        #visitorTable tr:nth-child(even) td {
+            background-color: #f9f9f9; 
+        }
+        #visitorTable tr:hover td {
+            background-color: #e0f7fa; 
+            cursor: default;
+        }
+        #visitorTable td a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        #visitorTable td a:hover {
+            text-decoration: underline;
+        }
+        
+        img { display: block; max-width: 80px; height: 100px; object-fit: cover; border-radius: 4px; }
+        .error-message {
+            text-align: center;
+            color: red;
+            font-weight: bold;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+<%
+// 1. Get and define parameters
+String fromdate = request.getParameter("datum1");
+String todate = request.getParameter("datum");
+
+// Flag to check if the form has been submitted
+boolean formSubmitted = (fromdate != null && !fromdate.isEmpty() && todate != null && !todate.isEmpty());
+%>
+
+<script>
+    // Placeholder function for messaging
+    function showMessage(msg) {
+        console.log("Validation Error: " + msg);
+    }
+
+    function ValidateForm2(form) {
+        if (form.datum1.value === "" || form.datum.value === "") {
+            showMessage("Please select both From Date and To Date.");
+            alert("Please select both From Date and To Date."); // Re-adding standard alert for immediate user feedback
+            return false;
+        }
+        return true; 
+    }
     
-	<meta http-equiv="pragma" content="no-cache">
-	<meta http-equiv="cache-control" content="no-cache">
-	<meta http-equiv="expires" content="0">    
-	<meta http-equiv="keywords" content="keyword1,keyword2,keyword3">
-	<meta http-equiv="description" content="This is my page">
-	<!--
-	<link rel="stylesheet" type="text/css" href="styles.css">
-	
-	
-	-->
-	<script language="javaScript" type="text/javascript" src="calendar.js"></script>
-   <link href="calendar.css" rel="stylesheet" type="text/css">
+    // Loads the visitor card into the main dashboard frame
+    function loadPrintPageInMainFrame(visitorId) { 
+        const url = "print_visitor_card.jsp?id=" + visitorId;
+        
+        if (window.parent && window.parent.right) {
+            window.parent.right.location.href = url;
+        } else {
+            window.location.href = url;
+        }
+    }
+    
+    // Search function must be placed outside the scriptlet block
+    function filterTable() {
+        var input, filter, table, tr, td, i, j, txtValue;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("visitorTable");
+        tr = table.getElementsByTagName("tr");
 
-  </head>
-  
-  
-  <body bgcolor="#CED8F6">
+        for (i = 1; i < tr.length; i++) {
+            var rowMatch = false;
+            td = tr[i].getElementsByTagName("td");
+            for (j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        rowMatch = true;
+                        break; 
+                    }
+                }
+            }
+            
+            if (rowMatch) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+</script>
+<h3>📅 View Visitor Records by Date</h3>
 
-  
+<form name="datelogin" method="get" action="<%= request.getRequestURI() %>" id="dateForm" onsubmit="return ValidateForm2(this)">
+    <div class="form-row">
+        
+        <div class="form-group">
+            <label for="datum1">From Date:</label>
+            <input type="date" name="datum1" id="datum1" required value="<%= formSubmitted ? fromdate : "" %>">
+        </div>
+        
+        <div class="form-group">
+            <label for="datum">To Date:</label>
+            <input type="date" name="datum" id="datum" required value="<%= formSubmitted ? todate : "" %>">
+        </div>
 
-
-<form name="datelogin"  action="viewbydate.jsp" enctype="text/plain" id="Form2" onsubmit="return ValidateForm2(this)">
-<table align="center">
-<tr><h2>Select the dates</h2></tr>
-<tr>&nbsp</tr>
-<tr>&nbsp</tr>
-
-<tr><td>From Date:</td>
-<td>
-
-<input type="text" name="datum1"><a  onClick="setYears(2011, 2050);
-       showCalender(this, 'datum1');">
-      <img src="calender.png"></a>
-      <table id="calenderTable">
-        <tbody id="calenderTableHead">
-          <tr>
-            <td colspan="4" align="center">
-	          <select onChange="showCalenderBody(createCalender(document.getElementById('selectYear').value,
-	           this.selectedIndex, false));" id="selectMonth">
-	              <option value="0">Jan</option>
-	              <option value="1">Feb</option>
-	              <option value="2">Mar</option>
-	              <option value="3">Apr</option>
-	              <option value="4">May</option>
-	              <option value="5">Jun</option>
-	              <option value="6">Jul</option>
-	              <option value="7">Aug</option>
-	              <option value="8">Sep</option>
-	              <option value="9">Oct</option>
-	              <option value="10">Nov</option>
-	              <option value="11">Dec</option>
-	          </select>
-            </td>
-            <td colspan="2" align="center">
-			    <select onChange="showCalenderBody(createCalender(this.value, 
-				document.getElementById('selectMonth').selectedIndex, false));" id="selectYear">
-				</select>
-			</td>
-            <td align="center">
-			    <a  onClick="closeCalender();"><font color="#003333" size="+1">X</font></a>
-			</td>
-		  </tr>
-       </tbody>
-       <tbody id="calenderTableDays">
-         <tr style="">
-           <td>Sun</td><td>Mon</td><td>Tue</td><td>Wed</td><td>Thu</td><td>Fri</td><td>Sat</td>
-         </tr>
-       </tbody>
-       <tbody id="calender"></tbody>
-    </table>
-</td>
-
-<td>To Date:</td>
-<td>
-
-<input type="text" name="datum"><a  onClick="setYears(2011, 2050);
-       showCalender(this, 'datum');">
-      <img src="calender.png"></a>
-      <table id="calenderTable">
-        <tbody id="calenderTableHead">
-          <tr>
-            <td colspan="4" align="center">
-	          <select onChange="showCalenderBody(createCalender(document.getElementById('selectYear').value,
-	           this.selectedIndex, false));" id="selectMonth">
-	              <option value="0">Jan</option>
-	              <option value="1">Feb</option>
-	              <option value="2">Mar</option>
-	              <option value="3">Apr</option>
-	              <option value="4">May</option>
-	              <option value="5">Jun</option>
-	              <option value="6">Jul</option>
-	              <option value="7">Aug</option>
-	              <option value="8">Sep</option>
-	              <option value="9">Oct</option>
-	              <option value="10">Nov</option>
-	              <option value="11">Dec</option>
-	          </select>
-            </td>
-            <td colspan="2" align="center">
-			    <select onChange="showCalenderBody(createCalender(this.value, 
-				document.getElementById('selectMonth').selectedIndex, false));" id="selectYear">
-				</select>
-			</td>
-            <td align="center">
-			    <a onClick="closeCalender();"><font color="#003333" size="+1">X</font></a>
-			</td>
-		  </tr>
-       </tbody>
-       <tbody id="calenderTableDays">
-         <tr style="">
-           <td>Sun</td><td>Mon</td><td>Tue</td><td>Wed</td><td>Thu</td><td>Fri</td><td>Sat</td>
-         </tr>
-       </tbody>
-       <tbody id="calender"></tbody>
-    </table>
-</td>
-
-<td>&nbsp&nbsp&nbsp&nbsp&nbsp<input type="submit" name="view" value="view" ></td></tr>
-
-
-</table>
-
+        <div class="form-group" style="flex-grow: 0;">
+            <input type="submit" name="view" value="View Records">
+        </div>
+    </div>
 </form>
 
-  </body>
+<%
+// STEP 2: CHECK SUBMISSION AND RENDER RESULTS (Only if formSubmitted is true)
+if (formSubmitted) {
+    Connection conn = null;
+    PreparedStatement ps = null; 
+    ResultSet rs = null;
+
+    try {
+        // 2. Establish connection
+        gatepass.Database db = new gatepass.Database();	
+        conn = db.getConnection();
+
+        // 3. SQL QUERY: Selecting all required fields
+        String sql = "SELECT ID, NAME, FATHERNAME, ADDRESS, DISTRICT, STATE, PINCODE, PHONE, " +
+                     "TO_CHAR(ENTRYDATE, 'DD-MON-YYYY') AS ENTRYDATE, TIME, OFFICERTOMEET, PURPOSE, MATERIAL " +
+                     "FROM visitor WHERE entrydate BETWEEN TO_DATE(?, ?) AND TO_DATE(?, ?) ORDER BY id DESC";
+        
+        ps = conn.prepareStatement(sql);
+        
+        // Set parameters for the Prepared Statement
+        ps.setString(1, fromdate);
+        ps.setString(2, DATE_FORMAT_MASK);
+        ps.setString(3, todate);
+        ps.setString(4, DATE_FORMAT_MASK);
+
+        // 4. Execute Query
+        rs = ps.executeQuery();
+%>
+    
+    <hr style=" border-top: 2px solid #ccc;">
+
+    <h3>Visitor Records Summary</h3>
+    
+    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search by name, ID, contact, officer, or purpose...">
+
+    <TABLE id="visitorTable" cellpadding="0" cellspacing="0">		
+        <thead>
+            <TR> 
+                <% for (String header : HEADERS) { %>
+                    <th><%= header %></th>
+                <% } %>
+            </TR>
+        </thead>
+        <tbody>
+        
+        <%
+            // 5. Process Results
+            int rowCount = 0;
+            while (rs.next()) {
+                rowCount++;
+        %>
+        
+        <TR>    
+            <td><%=rs.getString("id") %> </td>
+                        <td >
+                <a href="ShowVisitor.jsp?id=<%=rs.getString("id") %>" target="_blank">
+                    <img src="ShowVisitor.jsp?id=<%=rs.getString("id") %>" alt="Visitor Photo" /> 
+                </a>
+            </td>
+            
+            <TD><%=rs.getString("NAME") != null ? rs.getString("NAME").toUpperCase() : "" %></TD>
+            <td><%=rs.getString("FATHERNAME") %></td>
+            <TD>
+                <%=rs.getString("ADDRESS")%><br>
+                <%=rs.getString("DISTRICT")%>, <%=rs.getString("STATE")%> - <%=rs.getString("PINCODE") %>
+            </TD>
+
+            <TD><%=rs.getString("PHONE")%></TD>
+            <TD><%=rs.getString("ENTRYDATE")%></TD>
+            <TD><%=rs.getString("TIME")%></TD>
+
+            <TD><%=rs.getString("OFFICERTOMEET")%></TD>
+            <TD><%=rs.getString("PURPOSE")%></TD>
+            <TD><%=rs.getString("MATERIAL")%></TD>
+                        <td>
+                <a href="javascript:void(0);" onclick="loadPrintPageInMainFrame('<%= rs.getString("id") %>');"> 
+                    View pass 
+                </a>
+            </td>
+        </TR>
+
+        <%    } // end while loop %>
+        
+        <% if (rowCount == 0) { %>
+            <tr><td colspan="<%= HEADERS.length %>" class="error-message">No records found for the selected date range.</td></tr>
+        <% } %>
+        </tbody>
+    </TABLE>
+    
+<%
+    } catch (SQLException ex) {
+        System.err.println("SQL Error: " + ex.getMessage());
+        out.println("<div class='error-message'>Database Error (" + ex.getErrorCode() + "): " + ex.getMessage() + "</div>");
+    } catch (Exception ex) {
+        System.err.println("General Error: " + ex.getMessage());
+        out.println("<div class='error-message'>A general error occurred: " + ex.getMessage() + "</div>");
+    } finally {
+        // 6. Resource Cleanup (Crucial!)
+        if (rs != null) try { rs.close(); } catch (SQLException ignore) {}
+        if (ps != null) try { ps.close(); } catch (SQLException ignore) {}
+        if (conn != null) try { conn.close(); } catch (SQLException ignore) {}
+    }
+} // end if (formSubmitted)
+%>	
+</body>
 </html>
