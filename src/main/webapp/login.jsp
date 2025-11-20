@@ -36,14 +36,14 @@
                conn1 = db.getConnection();
                
                // Use PreparedStatement for security (prevent SQL Injection)
-               String sql = "SELECT PASSWD FROM GATEPASS_PASSWORD_MANAGER WHERE USERNAME = ?";
+               String sql = "SELECT PASSWORD FROM GATEPASSLOGIN WHERE USERNAME = ?";
                ps1 = conn1.prepareStatement(sql);
                ps1.setString(1, username);
                
                rs1 = ps1.executeQuery();
 
                if (rs1.next()) {
-                   String storedPassword = rs1.getString("PASSWD");
+                   String storedPassword = rs1.getString("PASSWORD");
                    
                    if (storedPassword.equals(password)) {
                        // Authentication SUCCESS
@@ -129,6 +129,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px; 
+    /* Using corporate colors for high-contrast professional look */
     background: <%= loginSuccess ? "linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)" : "#303f9f" %>; 
     color: white;
     position: fixed;
@@ -161,15 +162,19 @@ body {
     font-weight: bold;
     letter-spacing: 1px;
     margin-bottom: 5px;
+    /* Ensure title is white in dashboard mode */
+    color: <%= loginSuccess ? "#fff" : "inherit" %>; 
 }
 
 .center-text h2 {
     font-size: <%= loginSuccess ? "17px" : "18px" %>;
     font-weight: 500;
     opacity: 0.9;
+    /* Ensure subtitle is accent color in dashboard mode */
+    color: <%= loginSuccess ? "inherit" : "inherit" %>;
 }
 
-/* === LOGIN FORM STYLES (Only applied when not logged in) === */
+/* === LOGIN FORM STYLES (PRESERVED AS IS) === */
 <% if (!loginSuccess) { %>
 .login-container {
     display: flex;
@@ -282,17 +287,17 @@ input[type="reset"]:hover {
 }
 <% } %>
 
-/* === DASHBOARD NAVBAR STYLES (Only applied when logged in) === */
+/* === DASHBOARD NAVBAR STYLES (IMPROVED AND MODERNIZED) === */
 <% if (loginSuccess) { %>
 .navbar {
     position: fixed;
     top: 110px;
     left: 0;
     width: 100%;
-    height: 50px;
-    background: #ffffff;
-    border-bottom: 2px solid #1e3c72;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    height: 55px; /* Slightly taller for modern look */
+    background: #ffffff; /* White navbar for clean contrast */
+    border-bottom: 3px solid #007bff; /* Primary accent color line */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
     z-index: 999;
     display: flex; 
     justify-content: space-between; 
@@ -308,44 +313,47 @@ input[type="reset"]:hover {
 .navbar ul li {
     display: block;
     position: relative;
-    line-height: 50px;
+    line-height: 55px; /* Adjusted line-height */
     text-align: center;
 }
 .navbar ul li a.main-link {
     display: block;
     padding: 0 20px;
     text-decoration: none;
-    color: #1e3c72;
+    color: #1e3c72; /* Dark Navy text */
     font-weight: 600;
     transition: background-color 0.3s, color 0.3s;
-    border-right: 1px solid #eaeaea;
+    border-right: 1px solid #e9ecef; /* Subtle divider */
 }
 .navbar ul li:hover > a.main-link {
-    background: #1e3c72;
+    background: #1e3c72; /* Dark Navy hover background */
     color: #ffffff;
 }
 
 .dropdown-content {
     display: none;
     position: absolute;
-    top: 50px;
+    top: 55px; /* Adjusted top alignment */
     left: 0;
-    min-width: 250px;
+    min-width: 260px; /* Slightly wider */
     background-color: #ffffff;
-    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.25);
     z-index: 1000;
     text-align: left;
-    border: 1px solid #1e3c72;
+    border: 1px solid #007bff;
     border-top: none;
+    border-radius: 0 0 6px 6px;
+    overflow: hidden;
 }
 .dropdown-content a {
     color: #333;
-    padding: 12px 16px;
+    padding: 0 10px;
     text-decoration: none;
     display: block;
     font-weight: 500;
     white-space: nowrap;
     border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s, color 0.2s;
 }
 .dropdown-content a:hover {
     background-color: #e3f2fd;
@@ -373,39 +381,43 @@ input[type="reset"]:hover {
     text-decoration: none;
     margin-left: 10px;
     transition: background-color 0.3s, transform 0.1s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .change-password-button {
-    background: #007bff; 
+    background: #2ecc71; /* Green for key action */
 }
 .change-password-button:hover {
-    background: #0056b3;
+    background: #27ad60;
     transform: translateY(-1px);
 }
 
 .logout-button {
-    background: #d9534f; 
+    background: #dc3545; /* Red for logout */
 }
 .logout-button:hover {
-    background: #c9302c;
+    background: #c82333;
     transform: translateY(-1px);
 }
 
 .main-content {
     position: fixed;
-    top: 160px; 
+    top: 165px; /* 110px (Header) + 55px (Navbar) = 165px */
     left: 0;
     right: 0;
     bottom: 50px;
-    background: #f4f7f6;
+    background: #f8f9fa; /* Lighter background for content area */
     overflow: hidden;
     z-index: 500;
+    padding: 10px; /* Padding for the iframe container */
 }
 .main-content iframe {
     width: 100%;
-    height: 97%;
-    border: none;
-    background: transparent;
+    height: 100%;
+    border: 1px solid #e9ecef; /* Subtle border for the content frame */
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 0 15px rgba(0,0,0,0.05);
 }
 <% } %>
 
@@ -416,7 +428,7 @@ input[type="reset"]:hover {
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: <%= loginSuccess ? "#1e3c72" : "#303f9f" %>;
+    background: <%= loginSuccess ? "linear-gradient(90deg, #1e3c72 0%, #2a5298 100%)" : "#303f9f" %>;
     color: #fff;
     text-align: center;
     padding: 8px 0;
@@ -425,9 +437,12 @@ input[type="reset"]:hover {
     justify-content:center;
     height: 50px;
     z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
 }
 .footer img{
       height: 34px;
+      /* Adjust filter for better visibility on dark navy background */
+      filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); 
     }
 
 </style>
@@ -458,7 +473,8 @@ function changePassword() {
         <h1>CISF GATE PASS MANAGEMENT SYSTEM</h1>
         <h2>NATIONAL FERTILIZERS LIMITED, PANIPAT UNIT</h2>
     </div>
-    <img src="logo2.png" class="logo" alt="CISF Logo" <%= loginSuccess ? "onclick=\"window.location.href='http://10.3.122.199/';\"" : "" %>>
+    <img src="logo2.png" class="logo" alt="CISF Logo"
+    onclick="window.open('http://10.3.122.199/', '_blank');" />
 </header>
 
 <%
@@ -469,10 +485,10 @@ function changePassword() {
     <nav class="navbar">
         <ul>
         <li>
-                <a href="login.jsp" class="main-link">Home</a>
+                <a href="login.jsp" class="main-link">🏠 Home</a>
             </li>
             <li>
-                <a href="#" class="main-link">Contract</a>
+                <a href="#" class="main-link">📝 Contract</a>
                 <div class="dropdown-content">
                     <a href="Contract.jsp" target="right">Contract Registration</a>
                     <a href="Contract_History.jsp" target="right">Contract History</a>
@@ -480,25 +496,27 @@ function changePassword() {
             </li>
             
             <li>
-                <a href="#" class="main-link">Visitor</a>
+                <a href="#" class="main-link">🚶 Visitor</a>
                 <div class="dropdown-content">
+                
                     <a href="visitor.jsp" target="right">Visitor Gatepass</a>
+                    <a href="Viewall1.jsp" target="right">View All Visitors</a>
+                    <a href="selectid.jsp" target="right">Visitor Revisit</a>
                     <a href="view.jsp" target="right">View by Date</a>
                     <a href="selectname.jsp" target="right">View by Officer to Meet</a>
-                    <a href="viewall.jsp" target="right">View All Visitors</a>
-                    <a href="selectstate.jsp" target="right">View Visitors by State</a>
-                    <a href="selectid.jsp" target="right">Visitor Revisit</a>
+                    <a href="selectstate.jsp" target="right">View by State</a>
+                    <!-- <a href="viewall.jsp" target="right">View All Visitors</a> -->
                 </div>
             </li>
             <li>
-            	<a href="#" class="main-link">Contract Labour/Trainee </a>
+            	<a href="#" class="main-link">👷 Contract Labour/Trainee </a>
                 <div class="dropdown-content">
                     <a href="ContractLabour.jsp" target="right">Contract Labour/Trainee Gate Pass</a>
                     <a href="ContractLabourHistory.jsp" target="right">Contract Labour/Traine Pass History</a>
                 </div>
             </li>
             <li>
-                <a href="#" class="main-link">Foreigner</a>
+                <a href="#" class="main-link">🌍 Foreigner</a>
                 <div class="dropdown-content">
                     <a href="ForeignerGatepass.jsp" target="right">Foreigner Gate Pass</a>
                     <a href="ForeignerGatepassHistory.jsp" target="right">Foreigner Pass History</a>
@@ -511,13 +529,14 @@ function changePassword() {
                 🔑 Change Password
             </button>
             <button class="action-button logout-button" onclick="confirmLogout()">
-               Log Out
+               🚪 Log Out
             </button>
         </div>
     </nav>
 
     <main class="main-content">
-        <iframe src="" name="right" scrolling="yes"></iframe>
+        <!-- Default page should be Welcome.jsp -->
+        <iframe src="Welcome.jsp" name="right" scrolling="yes"></iframe>
     </main>
 <%
     } else {
@@ -569,9 +588,7 @@ function changePassword() {
     <p>&copy; <%= java.time.Year.now() %>, IT Department NFL, Panipat</p>
 </div>
 
-<script>
-console.log("Designed and Developed by Tawrej Ansari");
-</script>
+
 
 </body>
 </html>

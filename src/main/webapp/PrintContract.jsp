@@ -122,9 +122,7 @@ body {
     color: #cc0000; /* Red emphasis */
 }
 
-/* * --- CORRECTED SIGNATURE AREA STYLING ---
- * This replaces the previous .signature-row 
- */
+/* * --- SIGNATURE AREA STYLING --- */
 .signature-area {
     margin-top: 50px; 
     padding-top: 20px;
@@ -148,6 +146,39 @@ body {
     margin-bottom: 5px; /* Reduced space between line and text */
     height: 1px;
 }
+
+/* --- NEW INSTRUCTIONS AREA STYLING --- */
+.instructions-area {
+    margin-top: 40px;
+    padding: 20px;
+    border: 1px solid #1e3c72; /* Dark blue border */
+    border-radius: 8px;
+    background-color: #fff3e0; /* Light orange/yellow background for caution/notes */
+}
+
+.instructions-area h4 {
+    margin-top: 0;
+    color: #e65100; /* Darker orange title */
+    font-size: 18px;
+    border-bottom: 1px solid #e65100;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.instructions-area ul {
+    list-style-type: disc;
+    padding-left: 25px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.instructions-area ul li {
+    margin-bottom: 5px;
+    color: #333;
+}
+/* --- END INSTRUCTIONS AREA STYLING --- */
+
 
 /* Print Control */
 .print-container {
@@ -194,6 +225,13 @@ body {
         -webkit-print-color-adjust: exact;
         color-adjust: exact;
     }
+    /* Ensure instructions area prints (optional override if necessary) */
+    .instructions-area {
+        background-color: #fff3e0 !important;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+
     .print-container {
         display: none !important;
     }
@@ -236,7 +274,8 @@ function loadPrintPageInMainFrame(ID) {
 <body>
 <%
 /* String id = request.getParameter("id"); */
-String id = "1";
+String  id = "1";
+id = request.getParameter("id");
 
 if(id == null || id.trim().isEmpty()) {
 %>
@@ -254,7 +293,7 @@ if(id == null || id.trim().isEmpty()) {
         conn = db.getConnection();
         st = conn.createStatement();
 
-        String query = "SELECT ID, CONTRACT_NAME, CONTRACTOR_NAME, DEPARTMENT, CONTRACTOR_ADDRESS, WORKSITE, DESCRIPTION, CONTRACTOR_ADHAR, VALIDITY_PERIOD_FROM, VALIDITY_PERIOD_TO, CONTRACT_TYPE, REGISTRATION " +
+        String query = "SELECT ID, CONTRACT_NAME, CONTRACTOR_NAME, DEPARTMENT, CONTRACTOR_ADDRESS, WORKSITE, DESCRIPTION, CONTRACTOR_ADHAR, VALIDITY_FROM, VALIDITY_TO, CONTRACT_TYPE, REGISTRATION,LABOUR_SIZE,PHONE " +
                        "FROM GATEPASS_CONTRACT WHERE ID=" + id;
 
         rs = st.executeQuery(query);
@@ -298,27 +337,20 @@ if(id == null || id.trim().isEmpty()) {
             <td><%= rs.getString("REGISTRATION") %></td>
         </tr>
         <tr>
-            <td>Work Site:</td>
-            <td><%= rs.getString("WORKSITE") %></td>
+            
             <td>Department:</td>
             <td><%= rs.getString("DEPARTMENT") %></td>
+            <td>Labour Size:</td>
+            <td><%= rs.getString("LABOUR_SIZE") %></td>
         </tr>
         
         <tr>
             <td><span style="color:green;">Valid From:</span></td>
-            <td><span class="field-highlight" style="color:green;"><%= rs.getString("VALIDITY_PERIOD_FROM") %></span></td>
+            <td><span class="field-highlight" style="color:green;"><%= rs.getString("VALIDITY_FROM") %></span></td>
             <td><span style="color:red;">Valid To:</span></td>
-            <td><span class="field-highlight" style="color:red;"><%= rs.getString("VALIDITY_PERIOD_TO") %></span></td>
+            <td><span class="field-highlight" style="color:red;"><%= rs.getString("VALIDITY_TO") %></span></td>
         </tr>
         
-        <tr>
-            <td colspan="4" class="data-group-header">Contract Description</td>
-        </tr>
-        <tr>
-            <td style="width: 15%; background-color: #f7f7f7 !important;">Details:</td>
-            <td colspan="3"><%= rs.getString("DESCRIPTION") %></td>
-        </tr>
-
 
         <tr>
             <td colspan="4" class="data-group-header">Contractor Details</td>
@@ -326,13 +358,17 @@ if(id == null || id.trim().isEmpty()) {
         <tr>
             <td>Contractor Name:</td>
             <td><%= rs.getString("CONTRACTOR_NAME") %></td>
-            <td>Adhar No:</td>
+            <td>Contractor Aadhar No:</td>
             <td><%= rs.getString("CONTRACTOR_ADHAR") %></td>
         </tr>
         <tr>
-            <td>Address:</td>
+        <td>Contractor Contact No:</td>
+            <td><%= rs.getString("PHONE") %></td>
+            <td>Contractor Address:</td>
             <td colspan="3"><%= rs.getString("CONTRACTOR_ADDRESS") %></td>
         </tr>
+        <tr><td style="width: 15%; background-color: #f7f7f7 !important;">Description:</td>
+            <td colspan="3"><%= rs.getString("DESCRIPTION") %></td></tr>
     </table>
 
     <div class="signature-area">
@@ -346,8 +382,19 @@ if(id == null || id.trim().isEmpty()) {
             Issuing Authority Sign
         </div>
     </div>
-   
-</div>
+    
+    <div class="instructions-area">
+        <h4>🚨 Important Instructions</h4>
+        <ul>
+            <li>This document serves as proof of contract registration with NFL Panipat for the mentioned contractor and contract name.</li>
+            <li>The registration is valid only between the dates specified in the "Valid From" and "Valid To" fields.</li>
+            <li>Entry to the plant premises is strictly regulated by CISF personnel and requires a valid Gate Pass, which is issued based on this registration.</li>
+            <li>Any change in work scope, contractor details, or validity must be officially registered and updated in the system.</li>
+            <li>The contractor must ensure all personnel working under this contract possess valid individual Gate Passes at all times.</li>
+            <li>Violation of safety or security norms will lead to immediate cancellation of this contract registration and further action.</li>
+        </ul>
+    </div>
+    </div>
 <div class="print-container">
     <button id="printPageButton" class="print-button" onclick="printPage()">Print Contract Registration</button>
 </div>

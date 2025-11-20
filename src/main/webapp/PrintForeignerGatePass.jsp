@@ -84,12 +84,13 @@ body {
 /* Photo container on the right */
 .photo-container-right {
     flex-shrink: 0;
-    margin-left: 30px;
     padding-top: 5px;
     text-align: center;
 }
 
 .photo {
+	margin-top:40px;
+	margin-right:10px;
     width: 140px; /* Larger photo size */
     height: 180px;
     border: 4px solid #1e3c72; /* Official border */
@@ -273,8 +274,8 @@ if (srNo == null || srNo.trim().isEmpty()) {
     try {
         conn = db.getConnection();
         st = conn.createStatement();
-        String qry = "SELECT SER_NO,VISIT_DEPT,WORKSITE,NAME,FATHER_NAME,DESIGNATION,AGE,LOCAL_ADDRESS,PERMANENT_ADDRESS,NATIONALITY,"
-                   + "TO_CHAR(VALIDITY_PERIOD_FROM,'DD-MON-YYYY'),TO_CHAR(VALIDITY_PERIOD_TO,'DD-MON-YYYY'),PHOTO_IMAGE,TO_CHAR(SYSDATE,'MM-MON-YYYY') "
+        String qry = "SELECT SER_NO,VISIT_DEPT,WORKSITE,NAME,FATHER_NAME,AGE,PHONE,LOCAL_ADDRESS,PERMANENT_ADDRESS,NATIONALITY,"
+                   + "TO_CHAR(VALIDITY_FROM,'DD-MON-YYYY'),TO_CHAR(VALIDITY_TO,'DD-MON-YYYY'),TO_CHAR(UPDATE_DATE,'DD-MON-YYYY') "
                    + "FROM GATEPASS_FOREIGNER WHERE SER_NO='" + srNo + "'";
         // System.out.println("Select all data from Qry--" + qry); // Kept original print statement commented out
         rs = st.executeQuery(qry);
@@ -321,14 +322,14 @@ if (srNo == null || srNo.trim().isEmpty()) {
                 </tr>
                 <tr>
                     <td>Nationality:</td>
-                    <td><%= rs.getString(10) %></td>
-                </tr>
-                <tr>
-                    <td>Designation:</td>
-                    <td><%= rs.getString(6) %></td>
+                    <td><%= rs.getString(11) %></td>
                 </tr>
                 <tr>
                     <td>Age:</td>
+                    <td><%= rs.getString(8) %></td>
+                </tr>
+                <tr>
+                    <td>Contact No.:</td>
                     <td><%= rs.getString(7) %></td>
                 </tr>
             </table>
@@ -354,19 +355,19 @@ if (srNo == null || srNo.trim().isEmpty()) {
         </tr>
         <tr>
             <td>Local Address:</td>
-            <td><%= rs.getString(8) %></td>
-        </tr>
-        <tr>
-            <td>Permanent Address:</td>
             <td><%= rs.getString(9) %></td>
         </tr>
         <tr>
+            <td>Permanent Address:</td>
+            <td><%= rs.getString(10) %></td>
+        </tr>
+        <tr>
             <td>Valid From / Upto:</td>
-            <td>**<%= rs.getString(11) %>** to **<%= rs.getString(12) %>**</td>
+            <td><%= rs.getString(11) %> to <%= rs.getString(12) %></td>
         </tr>
         <tr>
             <td>Date of Issue:</td>
-            <td><%= rs.getString(14) %></td>
+            <td><%= rs.getString(13) %></td>
         </tr>
     </table>
 

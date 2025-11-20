@@ -1,348 +1,391 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.sql.*" %>
 <%@ page import="gatepass.Database" %>
-<%
-    // ==========================================================
-    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
-    // ==========================================================
-    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
-    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
-    response.setDateHeader("Expires", 0);        // Proxies.
 
-    // ==========================================================
-    // 🔑 SESSION AUTHENTICATION CHECK
-    // ==========================================================
-    // Check if the "username" session attribute exists (set during successful login)
+<%
+    /* SECURITY HEADERS */
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.setHeader("Pragma", "no-cache");
+    response.setDateHeader("Expires", 0);
+
+    /* SESSION CHECK */
     if (session.getAttribute("username") == null) {
-        // If not authenticated, redirect to the main login page
         response.sendRedirect("login.jsp");
-        return; // Stop processing the rest of the page
+        return;
     }
-    // If the session is valid, the code continues to the rest of the page.
-%>
-<%
-// 1. Database connection and ID generation
-Connection conn1 = null;
-Statement st1 = null;
-ResultSet rs1 = null;
-int id = 1;
 
-try {
-    gatepass.Database db1 = new gatepass.Database();
-    conn1 = db1.getConnection();
-    st1 = conn1.createStatement();
-    // Assuming Oracle NVL function for handling the initial NULL max value
-    rs1 = st1.executeQuery("SELECT NVL(MAX(ID), 1) + 1 FROM GATEPASS_CONTRACT");
-    if (rs1.next()) {
-        id = rs1.getInt(1);
-    }
-} catch (SQLException e) {
-    System.err.println("Database error generating contract ID: " + e.getMessage());
-} finally {
-    if (rs1 != null) try { rs1.close(); } catch (SQLException ignore) {}
-    if (st1 != null) try { st1.close(); } catch (SQLException ignore) {}
-    if (conn1 != null) try { conn1.close(); } catch (SQLException ignore) {}
-}
+    /* Generate next Contract ID */
+    int id = 1;
+    try (Connection conn = new Database().getConnection();
+         Statement st = conn.createStatement();
+         ResultSet rs = st.executeQuery("SELECT NVL(MAX(ID), 0) + 1 FROM GATEPASS_CONTRACT")) {
+        if (rs.next()) id = rs.getInt(1);
+    } catch (Exception e) { e.printStackTrace(); }
 %>
+
+<!DOCTYPE html>
 <html>
 <head>
 <title>Contract Registration</title>
+<meta charset="UTF-8">
 
 <style>
+/* =============== THEME =============== */
+:root {
+    --primary-navy: #1e3c72;
+    --accent-blue: #007bff;
+    --accent-red: #dc3545;
+    --bg-light: #f8f9fa;
+    --input-border: #ced4da;
+    --shadow-light: 0 4px 12px rgba(0,0,0,0.08);
+}
+
 body {
-  font-family: "Segoe UI", Arial, sans-serif;
-  background: #f4f7f6;
-  margin: 0;
-  padding: 30px;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    background: var(--bg-light);
+    margin: 0;
+    padding: 30px;
 }
 
 .container {
-  background-color: white;
-  width: 90%; 
-  max-width: 1000px; /* Slightly wider for better two-column balance */
-  margin: auto;
-  padding: 30px 40px;
-  border-radius: 15px;
-  box-shadow: 0px 5px 25px rgba(0,0,0,0.2);
-  animation: fadeIn 1s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+    background: #fff;
+    width: 95%;
+    max-width: 1200px;
+    margin: auto;
+    padding: 30px 40px;
+    border-radius: 15px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.14);
 }
 
 h2 {
-  text-align: center;
-  color: #1e3c72; /* Darker blue for professionalism */
-  margin-bottom: 30px;
-  letter-spacing: 0.5px;
-  font-weight: 600;
+    text-align: center;
+    color: var(--primary-navy);
+    font-weight: 700;
+    margin-bottom: 25px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e9ecef;
 }
 
-h3 {
-  color: #1e3c72;
-  font-size: 1.2em;
-  margin-top: 0;
-  margin-bottom: 15px;
+/* =============== GRID LAYOUT =============== */
+.main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 35px;
 }
 
-/* Adjust main two-column table */
-.main-layout-table {
-  width: 100%;
+/* =============== FORM GRID =============== */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 25px;
 }
-.main-layout-table td {
-  padding: 10px;
-  vertical-align: top;
-}
+.full-width { grid-column: span 2; }
 
-/* Adjust form layout table */
-.form-layout-table {
-  width: 100%;
+/* =============== INPUT STYLING =============== */
+label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #333;
 }
-
-.form-layout-table td {
-  padding: 8px;
-  vertical-align: middle;
-}
-
-.form-layout-table td:first-child {
-  font-weight: bold;
-  color: #333;
-  width: 35%; /* Reduced width to give more space to input fields */
-}
-
-/* Validity Period inputs (Inline arrangement) */
-.date-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.date-group label {
-    font-weight: normal;
-    color: #555;
-    white-space: nowrap;
-    margin-right: 5px;
-}
-
-.date-group input[type="date"] {
-    flex-grow: 1;
-    width: auto !important;
-}
+.mandatory { color: var(--accent-red); margin-left: 4px; }
 
 input[type="text"], input[type="date"], select {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  width: 95%;
-  transition: 0.2s;
-  font-size: 14px;
-  box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--input-border);
+    width: 100%;
+    background: #fff;
+    box-sizing: border-box;
 }
-
-input[type="text"]:focus, input[type="date"]:focus, select:focus {
-  border-color: #1e3c72;
-  box-shadow: 0 0 5px rgba(0,60,114,0.3);
-  outline: none;
-}
-
-/* Button Styling */
-input[type="submit"], input[type="reset"] {
-  background-color: #1e3c72;
-  border: none;
-  color: white;
-  padding: 10px 25px;
-  font-size: 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.3s;
-  margin: 5px 10px 5px 0;
-}
-
-input[type="submit"]:hover, input[type="reset"]:hover {
-  background-color: #0078d4;
-  transform: translateY(-1px);
-}
-
-/* Document Upload Container (Right Column) */
-.document-upload-container {
-  text-align: center;
-  background: #f8faff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0px 3px 15px rgba(0,0,0,0.1);
-  margin-top: 20px;
-  border: 1px dashed #ccc;
-  min-height: 400px; /* Give it some vertical presence */
-}
-
-.document-upload-container input[type="file"] {
-    width: 90%;
-    margin: 15px auto;
-    border: none;
-    padding: 10px;
+input[readonly] {
     background: #e9ecef;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-}
-.document-upload-container input[type="file"]:hover {
-    background: #dee2e6;
+    color: #444;
 }
 
+/* =============== BUTTONS =============== */
+input[type="submit"], input[type="reset"], button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: var(--shadow-light);
+    transition: 0.25s;
+}
+
+input[type="submit"] { background: var(--accent-blue); color: #fff; }
+input[type="submit"]:hover { background: #0056b3; }
+
+input[type="reset"] { background: var(--accent-red); color: #fff; }
+input[type="reset"]:hover { background: #b21f2d; }
+
+.button-container {
+    grid-column: span 2;
+    text-align: center;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+/* =============== DOCUMENT UPLOAD RIGHT PANEL =============== */
+.upload-panel {
+    background: var(--bg-light);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-light);
+    border: 1px solid #dcdcdc;
+}
+
+.upload-panel h3 {
+    color: var(--primary-navy);
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.upload-box {
+    border: 1px solid #d4e8f7;
+    background: #f0f5ff;
+    padding: 14px;
+    border-radius: 8px;
+}
+
+/* File preview */
+.file-preview-area {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #ddd;
+    min-height: 90px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+}
+
+.preview-thumbnail {
+    max-width: 90px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 6px;
+}
+
+.file-name {
+    font-weight: 600;
+    color: var(--primary-navy);
+    font-size: 14px;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Alerts */
+.custom-alert {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    font-weight: 700;
+    display:none;
+    border-radius: 8px;
+    color: #fff;
+    z-index: 2000;
+}
+.custom-alert.success { background: #28a745; }
+.custom-alert.error { background: #dc3545; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+}
 </style>
 
 <script>
-    function capLtr(value, fieldId) {
-        let input = document.getElementById(fieldId);
-        if (input) {
-            input.value = value.toUpperCase();
-        }
-    }
+function capLtr(val,id){ document.getElementById(id).value = val.toUpperCase(); }
 
-    function validateForm() {
-        let fromDate = new Date(document.getElementById('valdity_fromDate').value);
-        let toDate = new Date(document.getElementById('valdity_toDate').value);
+function displayCustomAlert(msg,type){
+    const box=document.getElementById("customAlertBox");
+    box.innerText=msg;
+    box.className="custom-alert "+type;
+    box.style.display="block";
+    setTimeout(()=> box.style.display="none",3500);
+}
 
-        if (fromDate && toDate && fromDate > toDate) {
-            alert("Validity 'From Date' cannot be after 'To Date'.");
-            return false;
-        }
-        return true; 
+/* FORM VALIDATION */
+function ValidateForm2(form){
+    let f=form.valdity_fromDate.value;
+    let t=form.valdity_toDate.value;
+    if(!f||!t){ displayCustomAlert("Select both validity dates","error"); return false; }
+    if(new Date(f)>new Date(t)){
+        displayCustomAlert("'From' cannot be later than 'To'","error");
+        return false;
     }
+    return true;
+}
+function validateForm(f){ return ValidateForm2(f); }
+
+/* DOCUMENT UPLOAD PREVIEW */
+let tempSelectedFile=null;
+function handleDocumentAdd(){
+    const fileInput=document.getElementById("DocumentFile");
+    const file=fileInput.files[0];
+    if(!file){ displayCustomAlert("Select a file","error"); return; }
+    if(file.size > 5*1024*1024){ displayCustomAlert("Max size 5MB","error"); fileInput.value=""; return; }
+
+    tempSelectedFile=file;
+    previewDocument(file);
+    displayCustomAlert("Document added successfully","success");
+}
+
+function previewDocument(file){
+    const area=document.getElementById("documentPreview");
+    const name=file.name;
+    const type=file.type;
+    if(type.startsWith("image/")){
+        const r=new FileReader();
+        r.onload=function(e){
+            area.innerHTML=`<img class="preview-thumbnail" src="${e.target.result}">
+                            <div class="file-name">${name}</div>`;
+        }
+        r.readAsDataURL(file);
+    } else if (type.includes("pdf")){
+        area.innerHTML=`<div style="font-size:30px;">📄</div>
+                        <div class="file-name">${name}</div>`;
+    } else {
+        area.innerHTML=`<div style="font-size:30px;">📎</div>
+                        <div class="file-name">${name}</div>`;
+    }
+}
 </script>
 
 </head>
 
-<body onkeydown="if(event.keyCode==13){event.keyCode=9; return event.keyCode}">
+<body>
+
+<div id="customAlertBox" class="custom-alert"></div>
+
 <div class="container">
-  <h2>Contract Registration</h2>
-  
-  <form action="saveContract" method="post" 
-        name="text_form" enctype="multipart/form-data" 
-        onsubmit="return validateForm()">
-        
-    <input type="hidden" id="imageData" name="imageData">
-    
-    <table class="main-layout-table">
-        <tr>
-            <td width="60%">
-                <table class="form-layout-table">
-                	<tr>
-                        <td>WorkSite.</td>
-                        <td><input type="text" name="worksite" value="NFL Panipat" readonly /></td>
-                    </tr>
-                    <tr>
-                        <td>Contract No.</td>
-                        <td><input type="text" name="id" value="<%=id%>" readonly /></td>
-                    </tr>
+    <h2>Contract Registration</h2>
 
-                    <tr>
-                        <td>Contract Name</td>
-                        <td><input type="text" id="name" name="name" 
-                                   onkeyup="capLtr(this.value, 'name');" 
-                                   onkeypress="return /[A-Za-z\s]/.test(event.key);" 
-                                   required/></td>
-                    </tr>
+    <div class="main-grid">
 
-                    <tr>
-                        <td>Contract Type</td>
-                        <td><input type="text" id="type" name="type" 
-                                   onkeyup="capLtr(this.value, 'type');" 
-                                   onkeypress="return /[A-Za-z\s]/.test(event.key);" 
-                                   required/></td>
-                    </tr>
-                    
-                    <tr>
-                        <td>Contractor Name</td>
-                        <td><input type="text" id="ContractorName" name="Contractor" 
-                                   onkeyup="capLtr(this.value, 'ContractorName');" 
-                                   onkeypress="return /[A-Za-z\s]/.test(event.key);" 
-                                   required/></td>
-                    </tr>
+        <!-- LEFT SIDE FORM -->
+        <div>
+            <form action="saveContract" method="post" enctype="multipart/form-data" onsubmit="return validateForm(this)">
+                <input type="hidden" name="Document" id="FinalDocument"/>
 
-                    <tr>
-                        <td>Department</td>
-                        <td><input type="text" id="dept" name="dept" 
-                                   onkeyup="capLtr(this.value, 'dept');" 
-                                   onkeypress="return /[A-Za-z\s]/.test(event.key);" 
-                                   required/></td>
-                    </tr>
+                <div class="form-grid">
 
-                    <tr>
-                        <td>Contractor Address</td>
-                        <td><input type="text" id="address" name="address" 
-                                   onkeyup="capLtr(this.value, 'address');" 
-                                   onkeypress="return /[A-Za-z0-9\s,.-]/.test(event.key);" 
-                                   required/></td>
-                    </tr>
-
-                    <tr>
-                        <td>Contractor Adhar No.</td>
-                        <td><input type="text" id="adhar" name="adhar" 
-                                   onkeyup="capLtr(this.value, 'adhar');" 
-                                   onkeypress="return /[0-9]/.test(event.key);" 
-                                   maxlength="12"
-                                   required/></td>
-                    </tr>
-
-                    <tr>
-                        <td>Contract Registration No.</td>
-                        <td><input type="text" id="reg" name="reg" 
-                                   onkeyup="capLtr(this.value, 'reg');" 
-                                   onkeypress="return /[A-Za-z0-9\s]/.test(event.key);" 
-                                   required/></td>
-                    </tr>
-
-                    <tr>
-                        <td>Validity Period</td>
-                        <td>
-                            <div class="date-group">
-                                <label for="valdity_fromDate">From:</label>
-                                <input type="date" id="valdity_fromDate" name="valdity_fromDate" required />
-                                
-                                <label for="valdity_toDate">To:</label>
-                                <input type="date" id="valdity_toDate" name="valdity_toDate" required />
-                            </div>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td>Description</td>
-                        <td><input type="text" id="desp" name="desp" 
-                                   onkeyup="capLtr(this.value, 'desp');" 
-                                   required/></td>
-                    </tr>
-                    
-                    <tr>
-                        <td></td>
-                        <td>
-                            <input type="submit" value="Register Contract">
-                            <input type="reset" value="Clear Form">
-                        </td>
-                    </tr>
-                </table>
-            </td>
-            
-            <td width="40%">
-                <div class="document-upload-container">
-                    <h3>Contract Document Upload 📄</h3>
-                    (Optional)
-                    <input type="file" id="Document" name="Document" 
-                           accept=".pdf, .doc, .docx, .jpg, .jpeg, .png"  />
-                    <p style="font-size: 13px; color: #555;">
-                    
-                        (Max size 5MB. Accepted formats: PDF, DOC, DOCX, JPG. JPEG, PNG.)
-                        
-                    
-                    </p>
+                    <div class="input-group">
+                        <label>WorkSite <span class="mandatory">*</span></label>
+                        <input type="text" name="worksite" value="NFL Panipat" readonly/>
                     </div>
-            </td>
-        </tr>
-    </table>
-  </form>
+
+                    <div class="input-group">
+                        <label>Contract No. <span class="mandatory">*</span></label>
+                        <input type="text" name="id" value="<%=id%>" readonly/>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Contract Name <span class="mandatory">*</span></label>
+                        <input type="text" id="name" name="name" onkeyup="capLtr(this.value,'name')" required/>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Contract Type <span class="mandatory">*</span></label>
+                        <input type="text" id="type" name="type" onkeyup="capLtr(this.value,'type')" required/>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Registration No.</label>
+                        <input type="text" id="reg" name="reg" onkeyup="capLtr(this.value,'reg')"/>
+                    </div>
+					<div class="input-group">
+                        <label>Contract Department</label>
+                        <input type="text" id="dept" name="dept" onkeyup="capLtr(this.value,'dept')"/>
+                    </div>
+                    <div class="input-group">
+                        <label>Validity From <span class="mandatory">*</span></label>
+                        <input type="date" id="valdity_fromDate" name="valdity_fromDate" required/>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Validity To <span class="mandatory">*</span></label>
+                        <input type="date" id="valdity_toDate" name="valdity_toDate" required/>
+                    </div>
+                    <div class="input-group">
+                        <label>Labour Size <span class="mandatory">*</span></label>
+                        <input type="text" id="laboursize" name="laboursize" required/>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Contractor Name <span class="mandatory">*</span></label>
+                        <input type="text" id="ContractorName" name="Contractor" onkeyup="capLtr(this.value,'ContractorName')" required/>
+                    </div>
+
+                    
+
+                    <div class="input-group">
+                        <label>Contractor Mobile No. <span class="mandatory">*</span></label>
+                        <input type="text" id="phone" name="phone" maxlength="10" onkeypress="return /[0-9]/.test(event.key)" required/>
+                    </div>
+                   
+                    <div class="input-group">
+                        <label>Contractor Aadhar No. <span class="mandatory">*</span></label>
+                        <input type="text" id="adhar" name="adhar" maxlength="12" onkeypress="return /[0-9]/.test(event.key)" required/>
+                    </div>
+					<div class="input-group full-width">
+                        <label>Contractor Address <span class="mandatory">*</span></label>
+                        <input type="text" id="address" name="address" onkeyup="capLtr(this.value,'address')" required/>
+                    </div>
+					
+                    
+
+                    <div class="input-group full-width">
+                        <label>Description</label>
+                        <input type="text" id="desp" name="desp" onkeyup="capLtr(this.value,'desp')"/>
+                    </div>
+
+                    <div class="button-container">
+                        <input type="submit" value="Register Contract"/>
+                        <input type="reset" value="Clear Form"
+                               onclick="document.getElementById('documentPreview').innerHTML='<p>No document selected.</p>';"/>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
+        <!-- RIGHT SIDE DOCUMENT UPLOAD -->
+        <div>
+            <div class="upload-panel">
+                <h3>Contract Document Upload</h3>
+
+                <div class="upload-box">
+                    <div style="display:flex; gap:10px;">
+                        <input type="file" id="DocumentFile" name="DocumentFile"
+                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="flex:1;">
+                        <button type="button" onclick="handleDocumentAdd()">Add</button>
+                    </div>
+
+                    <div id="documentPreview" class="file-preview-area">
+                        <p>No document selected.</p>
+                    </div>
+
+                    <div style="margin-top:12px; font-size:13px;">
+                        <b>Save Location:</b><br>
+                        <span style="font-family:monospace;">C:\GatepassImages\contract</span><br>
+                        <span style="color:#666;">Max size 5MB</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
 </div>
+
 </body>
 </html>

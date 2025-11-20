@@ -26,7 +26,7 @@ System.out.println("Showing image for  SerNo--"+srNo);
 	conn = db.getConnection();
 	String ip = db.getServerIp();
 		st=conn.createStatement();
-		ResultSet rs = st.executeQuery("SELECT SER_NO,PHOTO_IMAGE FROM GATEPASS_CONTRACT_LABOUR where SER_NO='"+srNo+"'"); // Executing the Query
+		ResultSet rs = st.executeQuery("SELECT SER_NO,PHOTO FROM GATEPASS_CONTRACT_LABOUR where SER_NO='"+srNo+"'"); // Executing the Query
 		while(rs.next()){
     	
     	//img = rs.getBlob(2);

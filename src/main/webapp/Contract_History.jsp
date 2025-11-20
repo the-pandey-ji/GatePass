@@ -163,8 +163,8 @@ img {
 
 				// Fetch contracts, order by ID descending (most recent first)
 				String query = "SELECT ID, CONTRACT_NAME, CONTRACTOR_NAME, DEPARTMENT, "
-				+ "TO_CHAR(VALIDITY_PERIOD_FROM, 'DD-MON-YYYY') AS V_FROM, "
-				+ "TO_CHAR(VALIDITY_PERIOD_TO, 'DD-MON-YYYY') AS V_TO, " + "REGISTRATION "
+				+ "TO_CHAR(VALIDITY_FROM, 'DD-MON-YYYY') AS V_FROM, "
+				+ "TO_CHAR(VALIDITY_TO, 'DD-MON-YYYY') AS V_TO, " + "REGISTRATION "
 				+ "FROM GATEPASS_CONTRACT ORDER BY ID DESC";
 
 				rs = st.executeQuery(query);

@@ -1,254 +1,283 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
-
-<%@ page import="java.sql.*" %>
-<%@ page import="java.io.*" %> 
-<%@ page language="java" import="gatepass.Database.*" %>
+<%@ page import="java.sql.*, java.io.*"%>
+<%@ page language="java" import="gatepass.Database"%>
 <%
-    // ==========================================================
-    // 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
-    // ==========================================================
-    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
-    response.setHeader("Pragma", "no-cache");    // HTTP 1.0.
-    response.setDateHeader("Expires", 0);        // Proxies.
+// ==========================================================
+// 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
+// ==========================================================
+response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
+response.setHeader("Pragma", "no-cache"); // HTTP 1.0.
+response.setDateHeader("Expires", 0); // Proxies.
 
-    // ==========================================================
-    // 🔑 SESSION AUTHENTICATION CHECK
-    // ==========================================================
-    // Check if the "username" session attribute exists (set during successful login)
-    if (session.getAttribute("username") == null) {
-        // If not authenticated, redirect to the main login page
-        response.sendRedirect("login.jsp");
-        return; // Stop processing the rest of the page
-    }
+// ==========================================================
+// 🔑 SESSION AUTHENTICATION CHECK
+// ==========================================================
+if (session.getAttribute("username") == null) {
+	response.sendRedirect("login.jsp");
+	return;
+}
 %>
 <html>
 <head>
-    <title>Visitor Details - Modern View</title>
-    <style>
-        body {
-            font-family: "Segoe UI", Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
-            margin: 0;
-            padding: 20px;
-        }
+<title>Visitor Details - Table View</title>
+<style>
+body {
+	font-family: "Segoe UI", Arial, sans-serif;
+	background: #f8f9fa;
+	margin: 0;
+	padding: 20px;
+}
 
-        h2 {
-            text-align: center;
-            color: #1e3c72;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+h2 {
+	text-align: center;
+	color: #1e3c72;
+	margin-bottom: 25px;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	font-weight: 700;
+}
 
-        /* 🔍 Search Bar */
-        .search-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+/* 🔍 Search Bar */
+.search-container {
+	text-align: center;
+	margin-bottom: 25px;
+}
 
-        .search-bar {
-            width: 60%;
-            max-width: 500px;
-            padding: 10px 15px;
-            border: 2px solid #1e3c72;
-            border-radius: 25px;
-            font-size: 15px;
-            outline: none;
-            transition: 0.3s;
-        }
+.search-bar {
+	width: 90%;
+	max-width: 600px;
+	padding: 10px 15px;
+	border: 1px solid #ced4da;
+	border-radius: 25px;
+	font-size: 15px;
+	outline: none;
+	transition: 0.3s;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
 
-        .search-bar:focus {
-            box-shadow: 0 0 10px rgba(30, 60, 114, 0.3);
-            border-color: #324ea8;
-        }
+.search-bar:focus {
+	border-color: #007bff;
+	box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+}
 
-        /* Card Layout */
-        .visitor-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            padding: 10px;
-        }
+/* Table Styling */
+.table-wrapper {
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+	overflow-x: auto; /* Ensures responsiveness on small screens */
+}
 
-        .visitor-card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            border-left: 5px solid #1e3c72;
-        }
+.visitor-table {
+	width: 100%;
+	border-collapse: collapse;
+}
 
-        .visitor-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        }
+.visitor-table th, .visitor-table td {
+	padding: 12px 15px;
+	text-align: left;
+	border-bottom: 1px solid #eee;
+}
 
-        .card-header {
-            background: #1e3c72;
-            color: #fff;
-            text-align: center;
-            padding: 10px;
-            font-weight: bold;
-            font-size: 18px;
-        }
+.visitor-table th {
+	background-color: #1e3c72;
+	color: #fff;
+	font-weight: 600;
+	text-transform: uppercase;
+	font-size: 13px;
+	white-space: nowrap;
+}
 
-        .card-body {
-            padding: 15px 20px;
-            line-height: 1.6;
-            color: #333;
-        }
+.visitor-table tr:hover td {
+	background-color: #f0f4ff;
+}
 
-        .card-body strong {
-            color: #1e3c72;
-        }
+.visitor-table tr:nth-child(even) {
+	background-color: #f9f9f9;
+}
 
-        .visitor-image {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-top: 1px solid #ddd;
-            border-bottom: 1px solid #ddd;
-        }
+.id-cell {
+	font-weight: bold;
+	color: #1e3c72;
+}
 
-        .card-footer {
-            padding: 10px 20px;
-            text-align: right;
-            background: #f4f4f9;
-            border-top: 1px solid #eee;
-        }
+.print-link {
+	text-decoration: none;
+	color: #fff;
+	background: #007bff;
+	padding: 6px 10px;
+	border-radius: 4px;
+	font-size: 13px;
+	white-space: nowrap;
+	transition: background-color 0.3s;
+}
 
-        .print-link {
-            text-decoration: none;
-            color: #fff;
-            background: #1e3c72;
-            padding: 6px 12px;
-            border-radius: 5px;
-            font-size: 13px;
-            transition: 0.3s;
-        }
+.print-link:hover {
+	background: #0056b3;
+}
 
-        .print-link:hover {
-            background: #324ea8;
-        }
+/* 🔹 No Results Message */
+#noResults {
+	display: none;
+	text-align: center;
+	color: #888;
+	font-size: 16px;
+	margin-top: 20px;
+}
 
-        /* 🔹 No Results Message */
-        #noResults {
-            display: none;
-            text-align: center;
-            color: #888;
-            font-size: 16px;
-            margin-top: 20px;
-        }
-    </style>
+img {
+	Display: block;
+	max-width: 80px;
+	height: 100px;
+	object-fit: cover;
+	border-radius: 4px;
+}
+</style>
 </head>
 <body>
 
-<%
-    String id = request.getParameter("id");
+	<%
+	Connection conn = null;
+	Statement st = null;
+	ResultSet rs = null;
+	boolean recordsFound = false;
 
-    try {
-        Connection conn = null;
-        gatepass.Database db = new gatepass.Database();    
-        conn = db.getConnection();
-        String ip = db.getServerIp();
+	try {
+		// The file originally referenced gatepass.Database. I'll instantiate it here.
+		gatepass.Database db = new gatepass.Database();
+		conn = db.getConnection();
 
-        ResultSet rs;
-        Statement st = conn.createStatement();
-        rs = st.executeQuery("SELECT * FROM visitor ORDER BY id DESC");
-%>
+		st = conn.createStatement();
+		// Fetch all necessary columns, ordered by ID DESC
+		String query = "SELECT ID, NAME, FATHERNAME, AGE, ADDRESS, DISTRICT, STATE, PINCODE, PHONE, ENTRYDATE, TIME, OFFICERTOMEET, PURPOSE, MATERIAL, VEHICLE, DEPARTMENT FROM visitor ORDER BY id DESC";
+		rs = st.executeQuery(query);
+	%>
 
-<h2>Visitor Records</h2>
+	<h2>All Visitor Records</h2>
 
-<!-- 🔍 Search Bar -->
-<div class="search-container">
-    <input type="text" id="searchInput" class="search-bar" placeholder="Search by name, officer, ID, purpose, or department...">
-</div>
+	<!-- 🔍 Search Bar -->
+	<div class="search-container">
+		<input type="text" id="searchInput" class="search-bar"
+			placeholder="Search by Name, Officer, ID, Purpose, or Department...">
+	</div>
 
-<div class="visitor-container" id="visitorContainer">
+	<div class="table-wrapper">
+		<table class="visitor-table" id="visitorTable">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>PHOTO</th>
+					<th>Name</th>
+					<th>Officer to Meet</th>
+					<th>Purpose</th>
+					<th>Date / Time</th>
+					<th>Contact</th>
+					<th>Address (District/State)</th>
+					<th>Action</th>
+				</tr>
+			</thead>
+			<tbody id="visitorTableBody">
 
-<%
-    while (rs.next()) {
-%>
+				<%
+				while (rs.next()) {
+					recordsFound = true;
+					// NOTE: Photo is excluded from this table view due to size constraints.
+				%>
 
-    <div class="visitor-card">
-        <div class="card-header">
-            Visitor ID: 
-            <a href="print_visitor_card.jsp?id=<%=rs.getInt("ID")%>" 
-               class="print-link" 
-               onclick="printPagePopUp(this.href); return false;">
-               <%=rs.getInt("ID")%>
-            </a>
-        </div>
-        <a href="ShowVisitor.jsp?id=<%=rs.getInt("id")%>" 
-               class="visitor-image" 
-               onclick="printPagePopUp(this.href); return false;">
-               <img class="visitor-Photo" src="ShowVisitor.jsp?id=<%= id %>" 
-                     alt="Visitor Photo">
-            </a>
-		
-    
+				<tr class="search-row">
+					<td class="id-cell"><%=rs.getInt("ID")%></td>
+					<td><a href="ShowVisitor.jsp?id=<%=rs.getString("ID")%>"
+						target="_blank"> <img
+							src="ShowVisitor.jsp?id=<%=rs.getString("ID")%>"
+							alt="Visitor Photo" />
+					</a></td>
+					<td><%=rs.getString("NAME")%><br> <small
+						style="color: #6c757d;">(<%=rs.getString("FATHERNAME")%>,
+							Age: <%=rs.getString("AGE")%>)
+					</small></td>
+					<td><%=rs.getString("OFFICERTOMEET")%><br>
+					<small style="color: #6c757d;">(<%=rs.getString("DEPARTMENT")%>)
+					</small></td>
+					<td><%=rs.getString("PURPOSE")%></td>
+					<td><%=rs.getString("ENTRYDATE")%><br> <small
+						style="color: #6c757d;">@ <%=rs.getString("TIME")%></small></td>
+					<td><%=rs.getString("PHONE")%><br> <small
+						style="color: #6c757d;">Vehicle: <%=rs.getString("VEHICLE")%></small>
+					</td>
+					<td><%=rs.getString("ADDRESS")%>, <%=rs.getString("DISTRICT")%>,
+						<%=rs.getString("STATE")%> - <%=rs.getString("PINCODE")%></td>
+					<td><a href="print_visitor_card.jsp?id=<%=rs.getInt("ID")%>"
+						class="print-link" target="_blank">View Pass</a></td>
+				</tr>
 
-        <div class="card-body">
-            <p><strong>Name:</strong> <span class="search-text"><%=rs.getString("NAME")%></span></p>
-            <p><strong>Father's Name:</strong> <%=rs.getString("FATHERNAME")%></p>
-            <p><strong>Age:</strong> <%=rs.getString("AGE")%></p>
-            <p><strong>Address:</strong> 
-                <%=rs.getString("ADDRESS")%>, 
-                <%=rs.getString("DISTRICT")%>, 
-                <%=rs.getString("STATE")%> - 
-                <%=rs.getString("PINCODE") %>
-            </p>
-            <p><strong>Phone:</strong> <%=rs.getString("PHONE")%></p>
-            <p><strong>Date of Visit:</strong> <%=rs.getString("ENTRYDATE")%></p>
-            <p><strong>Time of Visit:</strong> <%=rs.getString("TIME")%></p>
-            <p><strong>Officer to Meet:</strong> <span class="search-text"><%=rs.getString("OFFICERTOMEET")%></span></p>
-            <p><strong>Purpose:</strong> <span class="search-text"><%=rs.getString("PURPOSE")%></span></p>
-            <p><strong>Material:</strong> <%=rs.getString("MATERIAL")%></p>
-            <p><strong>Vehicle:</strong> <%=rs.getString("VEHICLE")%></p>
-            <p><strong>Department:</strong> <span class="search-text"><%=rs.getString("DEPARTMENT")%></span></p>
-        </div>
+				<%
+				}
+				%>
+			</tbody>
+		</table>
+	</div>
 
-        <div class="card-footer">
-            <a href="print_visitor_card.jsp?id=<%=rs.getInt("ID")%>" class="print-link">Print Pass</a>
-        </div>
-    </div>
 
-<%
-    }
-    rs.close();
-    conn.close();
-} catch (Exception ex) {
-    System.out.print(ex);
-}
-%>
+	<%
+	} catch (Exception ex) {
+	// Output an error message to the user/console if connection fails
+	out.println("<p style='color: #dc3545; text-align: center;'>Database Error: " + ex.getMessage() + "</p>");
+	ex.printStackTrace();
+	} finally {
+	// Resource Cleanup: Ensures safe resource release
+	if (rs != null)
+		try {
+			rs.close();
+		} catch (SQLException ignore) {
+		}
+	if (st != null)
+		try {
+			st.close();
+		} catch (SQLException ignore) {
+		}
+	if (conn != null)
+		try {
+			conn.close();
+		} catch (SQLException ignore) {
+		}
+	}
+	%>
 
-</div>
+	<!-- No Results Message -->
+	<p id="noResults"
+		style="<%=recordsFound ? "display: none;" : "display: block;"%>">No
+		visitor records found in the database.</p>
 
-<!-- No Results Message -->
-<p id="noResults">No matching visitor records found.</p>
 
-<!-- 🔍 Live Search Script -->
-<script>
-document.getElementById("searchInput").addEventListener("keyup", function() {
-    let input = this.value.toLowerCase();
-    let cards = document.getElementsByClassName("visitor-card");
-    let found = false;
+	<!-- 🔍 Live Search Script -->
+	<script>
+		document
+				.getElementById("searchInput")
+				.addEventListener(
+						"keyup",
+						function() {
+							let input = this.value.toLowerCase();
+							let rows = document.getElementById(
+									"visitorTableBody").getElementsByClassName(
+									"search-row");
+							let found = false;
 
-    for (let card of cards) {
-        let text = card.innerText.toLowerCase();
-        if (text.includes(input)) {
-            card.style.display = "";
-            found = true;
-        } else {
-            card.style.display = "none";
-        }
-    }
+							for (let i = 0; i < rows.length; i++) {
+								let row = rows[i];
+								// Concatenate text content of the entire row for search
+								let text = row.innerText.toLowerCase();
 
-    document.getElementById("noResults").style.display = found ? "none" : "block";
-});
-</script>
+								if (text.includes(input)) {
+									row.style.display = "";
+									found = true;
+								} else {
+									row.style.display = "none";
+								}
+							}
+
+							document.getElementById("noResults").style.display = found ? "none"
+									: "block";
+						});
+	</script>
 
 </body>
 </html>

@@ -23,7 +23,7 @@
 <%!
 // Define the column names for the table headers
 private static final String[] HEADERS = {
-    "GatePass No.","Photo", "Name", "Father Name", "Designation", "Age", "Local Address", "Permanent Address", "Nationality", "Issue Date", "Action"
+    "GatePass No.","Photo", "Name", "Father Name", "Visiting Department", "Age", "Local Address", "Permanent Address", "Nationality", "Issue Date", "Action"
 };
 %>
 
@@ -213,7 +213,7 @@ function filterTable() {
             
             // Note: Updated the SELECT query to use column aliases for robustness,
             // though the original method works when columns are requested by index (1-9).
-            String sql = "SELECT SER_NO, NAME, FATHER_NAME, DESIGNATION, AGE, LOCAL_ADDRESS, PERMANENT_ADDRESS, NATIONALITY, TO_CHAR(UPDATE_DATE,'DD-MON-YYYY') AS ISSUE_DATE " +
+            String sql = "SELECT SER_NO, NAME, FATHER_NAME, VISIT_DEPT, AGE, LOCAL_ADDRESS, PERMANENT_ADDRESS, NATIONALITY, TO_CHAR(UPDATE_DATE,'DD-MON-YYYY') AS ISSUE_DATE " +
                          "FROM GATEPASS_FOREIGNER ORDER BY SER_NO DESC";
             
             rs1 = st1.executeQuery(sql);
@@ -231,7 +231,7 @@ function filterTable() {
               </td>
             <td><%=rs1.getString("NAME")%></td>
             <td><%=rs1.getString("FATHER_NAME")%></td>
-            <td><%=rs1.getString("DESIGNATION")%></td>
+            <td><%=rs1.getString("VISIT_DEPT")%></td>
             <td><%=rs1.getString("AGE")%></td>
             <td><%=rs1.getString("LOCAL_ADDRESS")%></td>
             <td><%=rs1.getString("PERMANENT_ADDRESS")%></td>

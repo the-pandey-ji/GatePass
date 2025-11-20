@@ -84,12 +84,14 @@
         /* Photo container on the right */
         .photo-container-right {
             flex-shrink: 0;
-            margin-left: 30px;
+
             padding-top: 5px;
             text-align: center; /* Center the image */
         }
 
         .photo {
+        	margin-top:50px;
+        	margin-right:10px;
             width: 140px; /* Larger photo size */
             height: 180px;
             border: 4px solid #1e3c72; /* Official border */
@@ -275,11 +277,11 @@
             conn = db.getConnection();
             st = conn.createStatement();
 
-            String qry = "SELECT SER_NO,REF_NO,RENEWAL_NO,NAME,FATHER_NAME,DESIGNATION,AGE,"
+            String qry = "SELECT SER_NO,REF_NO,RENEWAL_TYPE,NAME,FATHER_NAME,DESIGNATION,AGE,"
                        + "LOCAL_ADDRESS,PERMANENT_ADDRESS,CONTRACTOR_NAME_ADDRESS,WORKSITE,"
-                       + "VEHICLE_NO,IDENTIFICATION,TO_CHAR(VALIDITY_PERIOD_FROM,'DD-MON-YYYY'),"
-                       + "TO_CHAR(VALIDITY_PERIOD_TO,'DD-MON-YYYY'),PHOTO_IMAGE,"
-                       + "TO_CHAR(SYSDATE,'MM-MON-YYYY') "
+                       + "VEHICLE_NO,IDENTIFICATION,TO_CHAR(VALIDITY_FROM,'DD-MON-YYYY'),"
+                       + "TO_CHAR(VALIDITY_TO,'DD-MON-YYYY'),PHOTO,"
+                       + "TO_CHAR(SYSDATE,'MM-MON-YYYY'), CONTRACT_NAME_ID, AADHAR,PHONE "
                        + "FROM GATEPASS_CONTRACT_LABOUR WHERE SER_NO='" + srNo + "'";
 
             rs = st.executeQuery(qry);
@@ -336,6 +338,14 @@
                     <td>Identification Mark:</td>
                     <td><%= rs.getString("IDENTIFICATION") %></td>
                 </tr>
+                <tr>
+                	<td>AADHAR NO.</td>
+                	<td><%=rs.getString("AADHAR") %></td>
+                </tr>
+                <tr>
+                	<td>CONTACT NO.</td>
+                	<td><%=rs.getString("PHONE") %></td>
+                </tr>
             </table>
         </div>
 
@@ -348,6 +358,10 @@
     <table class="data-table" style="margin-top: 25px; border: 1px solid #d4e8f7; border-radius: 8px; overflow: hidden;">
         <tr>
             <td class="data-group-header" colspan="2">Contract and Validity Details</td>
+        </tr>
+        <tr>
+        	<td>Contract ID/NAME:</td>
+        	<td><%=rs.getString("CONTRACT_NAME_ID") %>
         </tr>
         <tr>
             <td>Contractor Name:</td>
@@ -371,7 +385,7 @@
         </tr>
         <tr>
             <td>Validity Period:</td>
-            <td>**<%= rs.getString(14) %>** to **<%= rs.getString(15) %>**</td>
+            <td><%= rs.getString(14) %> to <%= rs.getString(15) %></td>
         </tr>
     </table>
 
