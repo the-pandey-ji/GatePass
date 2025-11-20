@@ -500,7 +500,7 @@ function changePassword() {
                 <div class="dropdown-content">
                 
                     <a href="visitor.jsp" target="right">Visitor Gatepass</a>
-                    <a href="Viewall1.jsp" target="right">View All Visitors</a>
+                    <a href="viewall.jsp" target="right">View All Visitors</a>
                     <a href="selectid.jsp" target="right">Visitor Revisit</a>
                     <a href="view.jsp" target="right">View by Date</a>
                     <a href="selectname.jsp" target="right">View by Officer to Meet</a>

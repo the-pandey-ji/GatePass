@@ -2,14 +2,14 @@
 <%@ page language="java" import="gatepass.Database"%>
 <%
 // ==========================================================
-// 🛡️ SECURITY HEADERS TO PREVENT CACHING THIS PAGE
+// 🚨 SECURITY HEADERS TO PREVENT CACHING THIS PAGE
 // ==========================================================
 response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // HTTP 1.1.
 response.setHeader("Pragma", "no-cache"); // HTTP 1.0.
 response.setDateHeader("Expires", 0); // Proxies.
 
 // ==========================================================
-// 🔑 SESSION AUTHENTICATION CHECK
+// 🔒 SESSION AUTHENTICATION CHECK
 // ==========================================================
 if (session.getAttribute("username") == null) {
 	response.sendRedirect("login.jsp");
@@ -20,6 +20,47 @@ if (session.getAttribute("username") == null) {
 <head>
 <title>Visitor Details - Table View</title>
 <style>
+/* ... (Existing CSS styles remain the same) ... */
+
+/* Pagination Style */
+.pagination {
+	text-align: center;
+	padding: 20px 0;
+}
+
+.pagination a {
+	color: #1e3c72;
+	padding: 8px 16px;
+	text-decoration: none;
+	transition: background-color 0.3s;
+	border: 1px solid #ddd;
+	margin: 0 4px;
+	border-radius: 4px;
+}
+
+.pagination a.active {
+	background-color: #1e3c72;
+	color: white;
+	border: 1px solid #1e3c72;
+}
+
+.pagination a:hover:not(.active) {
+	background-color: #ddd;
+}
+
+.pagination a.disabled {
+	color: #ccc;
+	pointer-events: none;
+	cursor: default;
+}
+
+.current-page-info {
+	color: #6c757d;
+	margin: 0 15px;
+	font-weight: bold;
+}
+
+/* ... (Existing table and search CSS) ... */
 body {
 	font-family: "Segoe UI", Arial, sans-serif;
 	background: #f8f9fa;
@@ -115,7 +156,7 @@ h2 {
 	background: #0056b3;
 }
 
-/* 🔹 No Results Message */
+/* ❌ No Results Message */
 #noResults {
 	display: none;
 	text-align: center;
@@ -136,29 +177,123 @@ img {
 <body>
 
 	<%
+	// --- PAGINATION PARAMETERS ---
+	
+	// --- SEARCH PARAMETER ---
+String search = request.getParameter("search");
+if (search == null) search = "";
+search = search.trim();
+
+// --- PAGINATION PARAMETERS ---
+final int RECORDS_PER_PAGE = 100;
+int currentPage = 1;
+
+	
+
+	
+	// Ensure current page is at least 1
+	if (currentPage < 1) {
+		currentPage = 1;
+	}
+	
+	// --- DATABASE VARIABLES ---
 	Connection conn = null;
 	Statement st = null;
 	ResultSet rs = null;
+	int totalRecords = 0;
 	boolean recordsFound = false;
 
 	try {
 		// The file originally referenced gatepass.Database. I'll instantiate it here.
 		gatepass.Database db = new gatepass.Database();
 		conn = db.getConnection();
-
 		st = conn.createStatement();
-		// Fetch all necessary columns, ordered by ID DESC
-		String query = "SELECT ID, NAME, FATHERNAME, AGE, ADDRESS, DISTRICT, STATE, PINCODE, PHONE, ENTRYDATE, TIME, OFFICERTOMEET, PURPOSE, MATERIAL, VEHICLE, DEPARTMENT FROM visitor ORDER BY id DESC";
-		rs = st.executeQuery(query);
+		
+		// --- 1. Get Total Record Count (Needed for pagination links) ---
+		String countQuery =
+    "SELECT COUNT(*) FROM visitor WHERE "
+    + " ( LOWER(NAME) LIKE LOWER('%" + search + "%') "
+    + " OR LOWER(OFFICERTOMEET) LIKE LOWER('%" + search + "%') "
+    + " OR LOWER(PURPOSE) LIKE LOWER('%" + search + "%') "
+    + " OR LOWER(PHONE) LIKE LOWER('%" + search + "%') "
+    + " OR TO_CHAR(ID) LIKE '%" + search + "%' ) ";
+
+		ResultSet rsCount = st.executeQuery(countQuery);
+		if (rsCount.next()) {
+			totalRecords = rsCount.getInt(1);
+		}
+		rsCount.close();
+		
+		// Calculate total pages
+		int totalPages = (int) Math.ceil((double) totalRecords / RECORDS_PER_PAGE);
+
+		// Adjust current page if it exceeds total pages
+		if (currentPage > totalPages && totalPages > 0) {
+			currentPage = totalPages;
+		}
+        
+        // Calculate the starting and ending row indexes based on the adjusted page
+	    /* int startRow = (currentPage - 1) * RECORDS_PER_PAGE + 1;
+        int endRow = currentPage * RECORDS_PER_PAGE; */
+		
+		// --- 2. Fetch Paginated Records using Oracle 11g ROWNUM ---
+		/*
+		 * ORACLE 11g PAGINATION PATTERN:
+		 * SELECT * FROM (
+		 * SELECT t.*, ROWNUM rn FROM (
+		 * SELECT ID, NAME, ... FROM visitor ORDER BY id DESC 
+		 * ) t
+		 * ) WHERE rn BETWEEN [startRow] AND [endRow]
+		 */
+		/* String dataQuery = String.format(
+			"SELECT * FROM ( " +
+			"    SELECT t.*, ROWNUM rn FROM ( " +
+			"        SELECT ID, NAME, FATHERNAME, AGE, ADDRESS, DISTRICT, STATE, PINCODE, PHONE, ENTRYDATE, TIME, OFFICERTOMEET, PURPOSE, MATERIAL, VEHICLE, DEPARTMENT " +
+			"        FROM visitor ORDER BY id DESC" +
+			"    ) t " +
+			") WHERE rn BETWEEN %d AND %d",
+			startRow, endRow
+		);
+		rs = st.executeQuery(dataQuery); */
+		int startRow = (currentPage - 1) * RECORDS_PER_PAGE + 1;
+		int endRow   = currentPage * RECORDS_PER_PAGE;
+
+		String dataQuery =
+		    "SELECT * FROM ( "
+		    + " SELECT inner_data.*, ROWNUM rn FROM ( "
+		    + "     SELECT ID, NAME, FATHERNAME, AGE, ADDRESS, DISTRICT, STATE, PINCODE, "
+		    + "            PHONE, ENTRYDATE, TIME, OFFICERTOMEET, PURPOSE, MATERIAL, "
+		    + "            VEHICLE, DEPARTMENT "
+		    + "     FROM visitor "
+		    + "     WHERE ( "
+		    + "            LOWER(NAME) LIKE LOWER('%" + search + "%') "
+		    + "         OR LOWER(OFFICERTOMEET) LIKE LOWER('%" + search + "%') "
+		    + "         OR LOWER(PURPOSE) LIKE LOWER('%" + search + "%') "
+		    + "         OR LOWER(PHONE) LIKE LOWER('%" + search + "%') "
+		    + "         OR TO_CHAR(ID) LIKE '%" + search + "%' "
+		    + "     ) "
+		    + "     ORDER BY ID DESC "
+		    + " ) inner_data "
+		    + " WHERE ROWNUM <= " + endRow + " "
+		    + ") WHERE rn >= " + startRow;
+
+
+		rs = st.executeQuery(dataQuery);
+		
 	%>
 
-	<h2>All Visitor Records</h2>
+	<h2>All Visitor Records (Page <%=currentPage%> of <%=totalPages%>)</h2>
 
-	<!-- 🔍 Search Bar -->
 	<div class="search-container">
-		<input type="text" id="searchInput" class="search-bar"
-			placeholder="Search by Name, Officer, ID, Purpose, or Department...">
-	</div>
+    <form method="get">
+        <input type="text" name="search" class="search-bar"
+               placeholder="Search all records..."
+               value="<%= search %>">
+        <button type="submit" style="display:none;"></button>
+        <input type="hidden" name="page" value="1">
+    </form>
+</div>
+
 
 	<div class="table-wrapper">
 		<table class="visitor-table" id="visitorTable">
@@ -180,7 +315,6 @@ img {
 				<%
 				while (rs.next()) {
 					recordsFound = true;
-					// NOTE: Photo is excluded from this table view due to size constraints.
 				%>
 
 				<tr class="search-row">
@@ -210,11 +344,67 @@ img {
 				</tr>
 
 				<%
-				}
+				} // End while loop
 				%>
 			</tbody>
 		</table>
 	</div>
+
+	<div class="pagination">
+		<%
+		if (totalPages > 1) {
+			// Previous Page Link
+			if (currentPage > 1) {
+		%>
+				<a href="?page=<%=currentPage - 1%>">Previous</a>
+		<%
+			} else {
+		%>
+				<a href="#" class="disabled">Previous</a>
+		<%
+			}
+
+			// Page Number Links (Showing a reasonable range, e.g., current, previous 2, next 2)
+			int startPage = Math.max(1, currentPage - 2);
+			int endPage = Math.min(totalPages, currentPage + 2);
+			
+			if (startPage > 1) {
+				out.println("<a href='?page=1'>1</a>");
+				if (startPage > 2) out.println("<span>...</span>");
+			}
+
+			for (int i = startPage; i <= endPage; i++) {
+				if (i == currentPage) {
+		%>
+					<a href="#" class="active"><%=i%></a>
+		<%
+				} else {
+		%>
+					<a href="?page=<%=i%>"><%=i%></a>
+		<%
+				}
+			}
+			
+			if (endPage < totalPages) {
+				if (endPage < totalPages - 1) out.println("<span>...</span>");
+				out.println("<a href='?page=" + totalPages + "'>" + totalPages + "</a>");
+			}
+
+			// Next Page Link
+			if (currentPage < totalPages) {
+		%>
+				<a href="?page=<%=currentPage + 1%>">Next</a>
+		<%
+			} else {
+		%>
+				<a href="#" class="disabled">Next</a>
+		<%
+			}
+		}
+		%>
+	</div>
+	
+	<p class="current-page-info">Total Records: <%=totalRecords%></p>
 
 
 	<%
@@ -242,42 +432,19 @@ img {
 	}
 	%>
 
-	<!-- No Results Message -->
 	<p id="noResults"
-		style="<%=recordsFound ? "display: none;" : "display: block;"%>">No
-		visitor records found in the database.</p>
+		style="<%=recordsFound ? "display: none;" : "display: block;"%>">
+		<%
+		if (totalRecords == 0) {
+			out.print("No visitor records found in the database.");
+		} else {
+			out.print("No records found on this page.");
+		}
+		%>
+	</p>
 
 
-	<!-- 🔍 Live Search Script -->
-	<script>
-		document
-				.getElementById("searchInput")
-				.addEventListener(
-						"keyup",
-						function() {
-							let input = this.value.toLowerCase();
-							let rows = document.getElementById(
-									"visitorTableBody").getElementsByClassName(
-									"search-row");
-							let found = false;
-
-							for (let i = 0; i < rows.length; i++) {
-								let row = rows[i];
-								// Concatenate text content of the entire row for search
-								let text = row.innerText.toLowerCase();
-
-								if (text.includes(input)) {
-									row.style.display = "";
-									found = true;
-								} else {
-									row.style.display = "none";
-								}
-							}
-
-							document.getElementById("noResults").style.display = found ? "none"
-									: "block";
-						});
-	</script>
+	
 
 </body>
 </html>
