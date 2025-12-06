@@ -1,4 +1,5 @@
 <%@ page language="java" import="java.util.*,java.sql.*,gatepass.Database"%>
+<%@ page import="java.time.LocalDateTime, java.time.format.DateTimeFormatter" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html>
@@ -18,32 +19,37 @@
         /* Report Container (Full Report/Document Layout) */
         .card {
             width: 100%;
-            max-width: 850px; /* Matched the template width */
+            max-width: 850px; 
             padding: 35px;
             margin: 20px auto;
             border: 1px solid #cce;
             font-size: 14px;
             background-color: #fff;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1); /* Stronger shadow for screen view */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1); 
             border-radius: 12px;
         }
 
-        /* --- PROFESSIONAL HEADER STRUCTURE (Copied from Template) --- */
+        /* --- REVISED PROFESSIONAL HEADER STRUCTURE --- */
         .header-report {
-            border-bottom: 3px solid #1e3c72; /* Dark blue primary line */
+            /* Main solid line below the titles/logos */
+            border-bottom: 3px solid #1e3c72; 
             padding-bottom: 15px;
             margin-bottom: 25px;
             display: flex;
+            flex-wrap: wrap; /* Allows metadata-top to wrap below */
             justify-content: space-between;
             align-items: center;
         }
         .logo-container {
-            width: 80px;
+            /* Adjusted container width */
+            width: 110px; 
             text-align: center;
+            flex-shrink: 0;
         }
         .logo-container img {
-            width: 65px; /* Slightly larger logo */
-            height: 65px;
+            /* 🚀 INCREASED LOGO SIZE FOR SCREEN VIEW */
+            width: 100px; 
+            height: 100px;
             display: block;
             margin: 0 auto;
             object-fit: contain;
@@ -55,7 +61,7 @@
         }
         .header-title-area h3 {
             margin: 0;
-            font-size: 24px; /* Largest title */
+            font-size: 26px; /* Larger title */
             color: #1e3c72;
             text-transform: uppercase;
             letter-spacing: 1.5px;
@@ -63,57 +69,93 @@
         }
         .header-title-area p {
             margin: 5px 0 0 0;
-            font-size: 15px;
+            font-size: 16px; /* Larger subtitle */
             color: #555;
             font-weight: 500;
         }
         /* --- END HEADER STRUCTURE --- */
 
+        /* --- NEW: METADATA TOP BLOCK (ID and Date) --- */
+        .metadata-top {
+            width: 100%; 
+            display: flex;
+            justify-content: space-between;
+            
+            /* 💡 ADDED DOTTED LINE HERE (ABOVE) */
+            border-top: 1px dotted #888; 
+            
+            /* Adjusted padding to fit line above */
+            padding: 15px 0 10px 0; 
+            margin-top: 15px;
+            order: 3; 
+        }
+        .metadata-top-item {
+            font-size: 15px;
+            font-weight: 600;
+            color: #555;
+            background-color: #f7f7f7;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .metadata-top-item strong {
+            color: #1e3c72;
+            margin-right: 5px;
+        }
+        .metadata-top-item .pass-number {
+            font-size: 17px; 
+            font-weight: 800;
+            color: #cc0000;
+        }
+        /* --- END METADATA BLOCK --- */
+
 
         /* Photo & Data Layout (Matching Template's Flexbox) */
         .content-top-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid #d4e8f7;
-        }
-
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	margin-bottom: 20px;
+	padding: 15px;
+	border: 1px solid #d4e8f7;
+	border-radius: 8px;
+	gap: 20px;
+}
         /* Photo container on the right */
         .photo-container-right {
-            flex-shrink: 0;
+	flex-shrink: 0;
 
-            padding-top: 5px;
-            text-align: center; /* Center the image */
-        }
+	padding-top: 5px;
+}
+.data-table td.photo-cell {
+    border-bottom: none !important;
+}
 
         .photo {
-        	margin-top:50px;
-        	margin-right:10px;
-            width: 140px; /* Larger photo size */
-            height: 180px;
-            border: 4px solid #1e3c72; /* Official border */
-            object-fit: cover;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            border-radius: 6px;
-        }
+            margin-top: 30px;
+            
+
+	width: 160px;
+	height: 200px;
+	border: 4px solid #1e3c72;
+	object-fit: cover;
+
+	border-radius: 6px;
+}
 
         /* Data Table Styling (Matching Template's Table structure) */
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 0px; /* Adjusted margin */
-            border: none; /* Remove default table border */
+            margin-top: 15px; 
+             
         }
 
         .data-table td {
-            padding: 10px 15px;
-            vertical-align: top;
-            border-bottom: 1px dashed #ddd; /* Light separator */
-        }
-
+	    padding: 10px 0px 10px 10px;
+	vertical-align: top;
+	border-bottom: 1px dashed #ddd;
+}
         /* Grouping Header (For Entry Details) */
         .data-group-header {
             background-color: #e3f2fd; /* Light blue background for grouping */
@@ -139,7 +181,6 @@
         .data-table td:nth-child(2) {
             color: #000;
             font-weight: 500;
-            /* Ensure the second cell doesn't have the background of the first */
             background-color: transparent !important;
         }
 
@@ -191,7 +232,6 @@
             margin-bottom: 20px;
         }
         .print-button {
-            /* Kept your print button styling, but updated colors for consistency */
             background-color: #007bff;
             color: #fff;
             border: none;
@@ -217,11 +257,20 @@
                 margin: 0;
                 padding: 0;
             }
+            /* 🚀 INCREASED LOGO SIZE FOR PRINTING */
+            .logo-container img {
+                width: 90pt !important; 
+                height: 90pt !important;
+            }
             /* Ensure shaded backgrounds print */
-            .data-table td:first-child, .data-group-header, .instructions, .content-top-section {
+            .data-table td:first-child, .data-group-header, .instructions, .content-top-section, .metadata-top-item {
                 background-color: #f7f7f7 !important; /* Keep shading for print contrast */
                 -webkit-print-color-adjust: exact;
                 color-adjust: exact;
+            }
+            .metadata-top {
+                /* Ensure dotted line prints correctly */
+                border-top: 1pt dotted #888 !important; 
             }
             @page {
                 size: A4;
@@ -247,7 +296,7 @@
         .data-table tr:last-child td {
             border-bottom: none !important;
         }
-
+		
     </style>
     <script>
         function printPage() {
@@ -262,8 +311,15 @@
 <body>
 <%
 
-/* String srNo = request.getParameter("ID"); */
     String srNo = request.getParameter("srNo");
+    
+    // Get current date for "Issued On" field
+    java.time.LocalDateTime now = java.time.LocalDateTime.now();
+    // Using correct date pattern (dd-MMM-yyyy)
+    java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("dd-MMM-yyyy"); 
+    String printDate = now.format(dateFormatter);
+    
+    
     if (srNo == null || srNo.trim().isEmpty()) {
 %>
         <p style="color:red;text-align:center;">Error: Missing or invalid Gate Pass Serial Number.</p>
@@ -281,7 +337,7 @@
                        + "LOCAL_ADDRESS,PERMANENT_ADDRESS,CONTRACTOR_NAME_ADDRESS,WORKSITE,"
                        + "VEHICLE_NO,IDENTIFICATION,TO_CHAR(VALIDITY_FROM,'DD-MON-YYYY'),"
                        + "TO_CHAR(VALIDITY_TO,'DD-MON-YYYY'),PHOTO,"
-                       + "TO_CHAR(SYSDATE,'MM-MON-YYYY'), CONTRACT_NAME_ID, AADHAR,PHONE "
+                       + "TO_CHAR(UPDATE_DATE,'DD-MON-YYYY'), CONTRACT_NAME_ID, AADHAR,PHONE "
                        + "FROM GATEPASS_CONTRACT_LABOUR WHERE SER_NO='" + srNo + "'";
 
             rs = st.executeQuery(qry);
@@ -289,9 +345,6 @@
             if (rs.next()) {
 %>
 
-<div class="print-container">
-    <button id="printPageButton" class="print-button" onclick="printPage()">Print Contract Labour Gate Pass</button>
-</div>
 
 <div class="card">
     <div class="header-report">
@@ -307,52 +360,70 @@
         <div class="logo-container">
             <img src="logo2.png" alt="CISF Logo">
         </div>
+        
+        <div class="metadata-top">
+            <div class="metadata-top-item" style="margin-right: auto;">
+                <strong>LABOUR/TRAINEE PASS NO:</strong>
+                <span class="pass-number">NFL/CISF/LABOUR/0<%= rs.getString("SER_NO") %></span>
+            </div>
+            <div class="metadata-top-item" style="margin-left: auto;">
+                <strong>Issued On:</strong>
+                <%= rs.getString(17) %>
+            </div>
+        </div>
+        
     </div>
+    
     <div class="content-top-section">
-        <div style="flex-grow: 1; padding-right: 30px;">
-            <table class="data-table">
-                <tr>
-                    <td class="data-group-header" colspan="2">Labour Identification Details</td>
-                </tr>
-                <tr>
-                    <td>Pass No:</td>
-                    <td><span class="pass-number"><%= rs.getString("SER_NO") %></span></td>
-                </tr>
-                <tr>
-                    <td>Name:</td>
-                    <td><%= rs.getString("NAME") %></td>
-                </tr>
-                <tr>
-                    <td>Father Name:</td>
-                    <td><%= rs.getString("FATHER_NAME") %></td>
-                </tr>
-                <tr>
-                    <td>Age:</td>
-                    <td><%= rs.getString("AGE") %></td>
-                </tr>
-                <tr>
-                    <td>Designation:</td>
-                    <td><%= rs.getString("DESIGNATION") %></td>
-                </tr>
-                <tr>
-                    <td>Identification Mark:</td>
-                    <td><%= rs.getString("IDENTIFICATION") %></td>
-                </tr>
-                <tr>
-                	<td>AADHAR NO.</td>
-                	<td><%=rs.getString("AADHAR") %></td>
-                </tr>
-                <tr>
-                	<td>CONTACT NO.</td>
-                	<td><%=rs.getString("PHONE") %></td>
-                </tr>
-            </table>
+        <div style="flex-grow: 1; ">
+<table class="data-table">
+    <tr>
+        <td class="data-group-header" colspan="3">Labour Identification Details</td>
+    </tr>
+
+    <tr>
+        <td>Name:</td>
+        <td><%= rs.getString("NAME") %></td>
+
+        <!-- Place Photo on the right side with label above -->
+        <td rowspan="7" class="photo-cell" style="text-align:center; width:200px;">
+    <img src="ShowImage.jsp?srNo=<%=srNo%>" class="photo" alt="Labour/Trainee Photo">
+</td>
+    </tr>
+
+    <tr>
+        <td>Father Name:</td>
+        <td><%= rs.getString("FATHER_NAME") %></td>
+    </tr>
+
+    <tr>
+        <td>Age:</td>
+        <td><%= rs.getString("AGE") %></td>
+    </tr>
+
+    <tr>
+        <td>Designation:</td>
+        <td><%= rs.getString("DESIGNATION") %></td>
+    </tr>
+
+    <tr>
+        <td>Identification Mark:</td>
+        <td><%= rs.getString("IDENTIFICATION") %></td>
+    </tr>
+
+    <tr>
+        <td>Aadhar No.:</td>
+        <td><%= rs.getString("AADHAR") %></td>
+    </tr>
+
+    <tr>
+        <td>Contact No.:</td>
+        <td><%= rs.getString("PHONE") %></td>
+    </tr>
+</table>
+
         </div>
 
-        <div class="photo-container-right">
-            <img src="ShowImage.jsp?srNo=<%= rs.getString("SER_NO") %>"
-                 class="photo" alt="Labour Photo">
-        </div>
     </div>
 
     <table class="data-table" style="margin-top: 25px; border: 1px solid #d4e8f7; border-radius: 8px; overflow: hidden;">
@@ -385,7 +456,7 @@
         </tr>
         <tr>
             <td>Validity Period:</td>
-            <td><%= rs.getString(14) %> to <%= rs.getString(15) %></td>
+            <td><span style="color:green; font-weight: 600;">FROM: <%= rs.getString(14) %></span> <span style="color:red; margin-left: 15px;">TO: <%= rs.getString(15) %></span></td>
         </tr>
     </table>
 
@@ -398,7 +469,7 @@
         <div class="signature-box">
          <br><br>
             <div class="signature-line"></div>
-            Issuing Authority Signature
+            Signature of Issuing Authority
         </div>
     </div>
 
@@ -428,6 +499,9 @@
         }
     }
 %>
+<div class="print-container">
+    <button id="printPageButton" class="print-button" onclick="printPage()">🖨️ Print Contract Labour Gate Pass</button>
+</div>
 <footer>Printed on <%= new java.util.Date() %> | © 2025 Gate Pass Management System | NFL Panipat</footer>
 </body>
 </html>

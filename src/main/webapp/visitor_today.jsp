@@ -189,14 +189,7 @@ final int RECORDS_PER_PAGE = 100;
 int currentPage = 1;
 
 	
-String pageParam = request.getParameter("page");
-if (pageParam != null && !pageParam.trim().equals("")) {
-    try {
-        currentPage = Integer.parseInt(pageParam);
-    } catch (Exception e) {
-        currentPage = 1;
-    }
-}
+
 	
 	// Ensure current page is at least 1
 	if (currentPage < 1) {
@@ -218,12 +211,15 @@ if (pageParam != null && !pageParam.trim().equals("")) {
 		
 		// --- 1. Get Total Record Count (Needed for pagination links) ---
 		String countQuery =
-    "SELECT COUNT(*) FROM visitor WHERE "
-    + " ( LOWER(NAME) LIKE LOWER('%" + search + "%') "
-    + " OR LOWER(OFFICERTOMEET) LIKE LOWER('%" + search + "%') "
-    + " OR LOWER(PURPOSE) LIKE LOWER('%" + search + "%') "
-    + " OR LOWER(PHONE) LIKE LOWER('%" + search + "%') "
-    + " OR TO_CHAR(ID) LIKE '%" + search + "%' ) ";
+    "SELECT COUNT(*) FROM visitor "
+  + "WHERE TRUNC(ENTRYDATE) = TRUNC(SYSDATE) AND ( "
+  + " LOWER(NAME) LIKE LOWER('%" + search + "%') "
+  + " OR LOWER(OFFICERTOMEET) LIKE LOWER('%" + search + "%') "
+  + " OR LOWER(PURPOSE) LIKE LOWER('%" + search + "%') "
+  + " OR LOWER(PHONE) LIKE LOWER('%" + search + "%') "
+  + " OR TO_CHAR(ID) LIKE '%" + search + "%' "
+  + ")";
+
 
 		ResultSet rsCount = st.executeQuery(countQuery);
 		if (rsCount.next()) {
@@ -265,24 +261,28 @@ if (pageParam != null && !pageParam.trim().equals("")) {
 		int startRow = (currentPage - 1) * RECORDS_PER_PAGE + 1;
 		int endRow   = currentPage * RECORDS_PER_PAGE;
 
+
+
 		String dataQuery =
 			    "SELECT * FROM ( "
-			    + " SELECT inner_data.*, ROWNUM rn FROM ( "
-			    + "     SELECT ID, NAME, FATHERNAME, AGE, ADDRESS, DISTRICT, STATE, PINCODE, "
-			    + "            PHONE, TO_CHAR(ENTRYDATE,'DD-MON-YYYY') AS ENTRYDAT, ENTRYDATE, TIME, OFFICERTOMEET, PURPOSE, MATERIAL, "
-			    + "            VEHICLE, DEPARTMENT "
-			    + "     FROM visitor "
-			    + "     WHERE ( "
-			    + "            LOWER(NAME) LIKE LOWER('%" + search + "%') "
-			    + "         OR LOWER(OFFICERTOMEET) LIKE LOWER('%" + search + "%') "
-			    + "         OR LOWER(PURPOSE) LIKE LOWER('%" + search + "%') "
-			    + "         OR LOWER(PHONE) LIKE LOWER('%" + search + "%') "
-			    + "         OR TO_CHAR(ID) LIKE '%" + search + "%' "
-			    + "     ) "
-			    + "     ORDER BY ENTRYDATE DESC, ID DESC "
-			    + " ) inner_data "
-			    + " WHERE ROWNUM <= " + endRow + " "
-			    + ") WHERE rn >= " + startRow;
+			  + "   SELECT inner_data.*, ROWNUM rn FROM ( "
+			  + "       SELECT ID, NAME, FATHERNAME, AGE, ADDRESS, DISTRICT, STATE, PINCODE, "
+			  + "              PHONE, TO_CHAR(ENTRYDATE,'DD-MON-YYYY') AS ENTRYDAT, ENTRYDATE, "
+			  + "              \"TIME\", OFFICERTOMEET, PURPOSE, MATERIAL, VEHICLE, DEPARTMENT "
+			  + "       FROM visitor "
+			  + "       WHERE TRUNC(ENTRYDATE) = TRUNC(SYSDATE) "
+			  + "         AND ( "
+			  + "              LOWER(NAME) LIKE LOWER('%" + search + "%') "
+			  + "           OR LOWER(OFFICERTOMEET) LIKE LOWER('%" + search + "%') "
+			  + "           OR LOWER(PURPOSE) LIKE LOWER('%" + search + "%') "
+			  + "           OR LOWER(PHONE) LIKE LOWER('%" + search + "%') "
+			  + "           OR TO_CHAR(ID) LIKE '%" + search + "%' "
+			  + "         ) "
+			  + "       ORDER BY ENTRYDATE DESC, \"TIME\" DESC "
+			  + "   ) inner_data "
+			  + "   WHERE ROWNUM <= " + endRow
+			  + ") WHERE rn >= " + startRow;
+
 
 
 
@@ -389,8 +389,7 @@ if (pageParam != null && !pageParam.trim().equals("")) {
 		<%
 				} else {
 		%>
-					<a href="?page=<%=i%>&search=<%=search%>"><%=i%></a>
-
+					<a href="?page=<%=i%>"><%=i%></a>
 		<%
 				}
 			}
